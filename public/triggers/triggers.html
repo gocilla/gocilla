@@ -1,0 +1,75 @@
+<div id="orgs" class="container">
+
+    <div id="orgs-list">
+        <h3>Triggers <a class="glyphicon glyphicon-plus" aria-hidden="true"></a></h3>
+        <a href="/organizations/{{orgId}}/repositories/{{repoId}}/triggers/{{$index}}" ng-repeat="trigger in triggers">
+            <div class="org">
+                <div ng-switch on="trigger.event">
+                    <span class="mega-octicon octicon-tag" aria-hidden="true" ng-switch-when="tag"></span>
+                    <span class="mega-octicon octicon-git-pull-request" aria-hidden="true" ng-switch-when="pull"></span>
+                    <span class="mega-octicon octicon-git-merge" aria-hidden="true" ng-switch-default></span>
+                </div>
+                <div>
+                    <div><strong>{{trigger.pipeline}}</strong></div>
+                    <div class="org-name"><strong>{{trigger.event}}</strong> to <strong>{{trigger.branch}}</strong></div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div id="org-repos">
+
+        <form class="form-horizontal" style="width: 600px;">
+
+            <legend>Trigger</legend>
+            <div class="form-group">
+                <label for="event" class="col-lg-2 control-label">Event:</label>
+                <div class="col-lg-10">
+                    <label class="radio-inline"><input type="radio" ng-model="trigger.event" value="push">Push</label>
+                    <label class="radio-inline"><input type="radio" ng-model="trigger.event" value="tag">Tag</label>
+                    <label class="radio-inline"><input type="radio" ng-model="trigger.event" value="pull">Pull</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="branch" class="col-lg-2 control-label">Branch:</label>
+                <div class="col-lg-10">
+                    <input type="text" class="form-control" ng-model="trigger.branch" placeholder="Branch (e.g. master)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pipeline" class="col-lg-2 control-label">Pipeline:</label>
+                <div class="col-lg-10">
+                    <input type="text" class="form-control" ng-model="trigger.pipeline" placeholder="Pipeline name in .gocilla.yml">
+                </div>
+            </div>
+
+            <legend>Environment Variables</legend>
+            <div class="form-inline" style="margin-top: 2px;" ng-repeat="envVar in trigger.envVars">
+                <input type="text" class="form-control" ng-model="envVar.name" placeholder="Variable name">
+                <input type="text" class="form-control" ng-model="envVar.value" placeholder="Variable value">
+                <button type="button" class="btn btn-danger" ng-click="deleteEnvVar($index)">
+                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="form-inline" style="margin-top: 2px;">
+                <input type="text" class="form-control" ng-model="newEnvVar.name" placeholder="Variable name">
+                <input type="text" class="form-control" ng-model="newEnvVar.value" placeholder="Variable value">
+                <button type="button" class="btn btn-success" ng-click="addEnvVar()">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <hr>
+
+            <div class="form-group">
+                <div class="col-lg-10">
+                    <button type="button" class="btn btn-default">Cancel</button>
+                    <button type="submit" class="btn btn-primary" ng-click="submit()">Submit</button>
+                </div>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>

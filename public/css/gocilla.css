@@ -1,0 +1,89 @@
+body {
+	color: #777;
+	font-size: 14px;
+}
+
+.container {
+	padding: 15px;
+	margin: 0px;
+	width: 100%;
+}
+
+#orgs > #orgs-list {
+	width: 300px;
+	display: inline-block;
+	padding-right: 20px;
+}
+
+#orgs > #orgs-list > h3 {
+	font-size: 14px;
+	margin-top: 0px;
+	padding-bottom: 4px;
+	border-bottom: solid 1px #EFF0EC;
+}
+
+#orgs > #orgs-list > a {
+	text-decoration: none;
+	color: inherit;
+}
+
+#orgs > #orgs-list > a > div {
+    border-left-style: solid;
+    border-left-width: 4px;
+	border-left-color: white;
+	padding-left: 5px;
+	margin-right: 10px;
+	margin-top: 6px;
+	margin-bottom: 6px;
+}
+
+#orgs > #orgs-list > a:hover > div {
+	border-left-color: inherit;
+}
+
+#orgs > #orgs-list > a > .org > * {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#orgs > #orgs-list > a > .org > * > img {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+}
+
+#orgs > #orgs-list > a > .org > * > span {
+	width: 30px;
+	height: 30px;
+}
+
+#orgs > #orgs-list > a:hover > .org > * > .org-name {
+	text-decoration: underline;
+}
+
+#orgs > #org-repos {
+	vertical-align: top;
+	display: inline-block;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+#orgs > #org-repos > h2 {
+	margin-top: 0px;
+}
+
+#orgs > #org-repos > .repo {
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+#orgs > #org-repos > .repo > * {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#orgs > #org-repos > .repo > a > .repo-settings {
+	font-size: 25px;
+	padding-left: 10px;
+	padding-right: 10px;
+}
