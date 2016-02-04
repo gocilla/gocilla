@@ -1,0 +1,31 @@
+{
+  "port": 3000,
+  "mongodb": {
+    "url": "mongodb://localhost/gocilla"
+  },
+  "oauth2": {
+    "strategy": {
+      "clientID": "xxx",
+      "clientSecret": "xxxxxx",
+      "scopes": ["user:email", "repo"],
+      "endpoint": {
+        "authURL": "https://github.com/login/oauth/authorize",
+        "tokenURL": "https://github.com/login/oauth/access_token"
+      }
+    },
+    "oauthState": "thisshouldberandom"
+  },
+  "github": {
+    "events": ["push", "pull_request"],
+    "eventsUrl": "http://localhost:3000/api/events"
+  },
+  "session": {
+    "name": "gocilla",
+    "keys": ["something-very-secret"]
+  },
+  "docker": {
+    "hosts": ["tcp://192.168.59.103:2376"],
+    "certPath": "~/.boot2docker/certs/boot2docker-vm",
+    "tlsVerify": true
+  }
+}

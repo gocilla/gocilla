@@ -1,0 +1,32 @@
+<div id="orgs" class="container">
+
+    <div id="orgs-list">
+        <h3>Organizations</h3>
+        <a href="/organizations/{{organization.name}}" ng-repeat="organization in organizations">
+            <div class="org">
+                <div>
+                    <img src="{{organization.avatarURL}}">
+                </div>
+                <div>
+                    <div class="org-name"><strong>{{organization.name}}</strong></div>
+                    <div>Repositories: <strong>{{organization.repositories.length}}</strong></div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div id="org-repos" ng-repeat="organization in organizations | filter: {name: orgId} | limitTo: 1">
+        <h2>Organization: <strong>{{organization.name}}</strong></h2>
+        <div class="repo" ng-repeat="repo in organization.repositories">
+            <switch name="enabled" ng-model="repo.hooked" class="green" ng-change="switchRepo(repo)"></switch>
+            <a href="/organizations/{{organization.name}}/repositories/{{repo.name}}/triggers">
+                <i class="glyphicon glyphicon-cog repo-settings"></i>
+            </a>
+            <div>
+                <div><strong>{{organization.name}}/{{repo.name}}</strong></div>
+                <div style="max-width: 800px;">{{repo.description}}</div>
+            </div>
+        </div>
+    </div>
+
+</div>
