@@ -1,7 +1,12 @@
 # Gocilla
 
-Continuous integration server where build jobs are isolated in docker containers
+Continuous integration server, fully implemented in [Go](https://golang.org), focused on the whole process of [continuous delivery](https://en.wikipedia.org/wiki/Continuous_delivery). It is inspired by [travis](https://travis-ci.org), [jenkins](https://jenkins-ci.org/), and other tools.
 
+## Installation
+
+```
+go get github.com/gocilla/gocilla
+```
 
 ## License
 
