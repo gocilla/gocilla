@@ -1,11 +1,11 @@
 // Copyright 2016 Telefónica Investigación y Desarrollo, S.A.U
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,23 +18,23 @@ import (
 	"fmt"
 	"log"
 
-	"../docker"
-	"../github"
-	"../mongodb"
+	"github.com/gocilla/gocilla/managers/docker"
+	"github.com/gocilla/gocilla/managers/github"
+	"github.com/gocilla/gocilla/managers/mongodb"
 )
 
 type ContainerBuildManager struct {
-	database *mongodb.Database
+	database      *mongodb.Database
 	dockerManager *docker.DockerManager
-	buildSpec *BuildSpec
-	pipeline *BuildPipelineSpec
-	trigger *mongodb.Trigger
-	event *github.Event
-	dockerSHA string
+	buildSpec     *BuildSpec
+	pipeline      *BuildPipelineSpec
+	trigger       *mongodb.Trigger
+	event         *github.Event
+	dockerSHA     string
 }
 
 func NewContainerBuildManager(database *mongodb.Database, dockerManager *docker.DockerManager, buildSpec *BuildSpec,
-		pipeline *BuildPipelineSpec, trigger *mongodb.Trigger, event *github.Event, dockerSHA string) *ContainerBuildManager {
+	pipeline *BuildPipelineSpec, trigger *mongodb.Trigger, event *github.Event, dockerSHA string) *ContainerBuildManager {
 	return &ContainerBuildManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA}
 }
 
@@ -99,7 +99,7 @@ func (containerBuildManager *ContainerBuildManager) GitProjectClone(containerMan
 		if err != nil {
 			log.Println("Error executing command", err)
 			return err
-		}	
+		}
 	}
 	return nil
 }

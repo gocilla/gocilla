@@ -1,11 +1,11 @@
 // Copyright 2016 Telefónica Investigación y Desarrollo, S.A.U
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,26 +21,26 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"../managers/oauth2"
-	"../managers/github"
-	"../managers/mongodb"
+	"github.com/gocilla/gocilla/managers/github"
+	"github.com/gocilla/gocilla/managers/mongodb"
+	"github.com/gocilla/gocilla/managers/oauth2"
 )
 
 type Organization struct {
-	Name *string `json:"name"`
-	AvatarURL *string `json:"avatarURL,omitempty"`
+	Name         *string       `json:"name"`
+	AvatarURL    *string       `json:"avatarURL,omitempty"`
 	Repositories []*Repository `json:"repositories,omitempty"`
 }
 
 type Repository struct {
-	Name *string `json:"name"`
+	Name        *string `json:"name"`
 	Description *string `json:"description,omitempty"`
-	GitURL *string `json:"gitURL,omitempty"`
-	Hooked bool `json:"hooked,omitempty"`
+	GitURL      *string `json:"gitURL,omitempty"`
+	Hooked      bool    `json:"hooked,omitempty"`
 }
 
 type OrganizationsApi struct {
-	Database *mongodb.Database
+	Database      *mongodb.Database
 	OAuth2Manager *oauth2.OAuth2Manager
 	GitHubManager *github.GitHubManager
 }
@@ -51,25 +51,25 @@ func NewOrganizationsApi(database *mongodb.Database, oauth2Manager *oauth2.OAuth
 
 func (organizationsApi OrganizationsApi) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	oauth2Client := organizationsApi.OAuth2Manager.GetClient(r)
-    githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
+	githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
 
 	/*
-	// Get the personal organization
-	user, _ := githubClient.GetUser()
-	// Get the other organizations
-	orgs, _ := githubClient.GetOrganizations()
-	// Merge the personal organization and the other organizations
-	organizations := make([]Organization, len(orgs) + 1)
-	organizations[0] = Organization{user.Login, user.AvatarURL}
-	for i := range orgs {
-		organizations[i + 1] = Organization{orgs[i].Login, orgs[i].AvatarURL}
-	}
-	jsonOrganizations, err := json.Marshal(organizations)
-	if err != nil {
-		w.Write([]byte("Error marshalling the organizations"))
-		return
-	}
-	w.Write(jsonOrganizations)
+		// Get the personal organization
+		user, _ := githubClient.GetUser()
+		// Get the other organizations
+		orgs, _ := githubClient.GetOrganizations()
+		// Merge the personal organization and the other organizations
+		organizations := make([]Organization, len(orgs) + 1)
+		organizations[0] = Organization{user.Login, user.AvatarURL}
+		for i := range orgs {
+			organizations[i + 1] = Organization{orgs[i].Login, orgs[i].AvatarURL}
+		}
+		jsonOrganizations, err := json.Marshal(organizations)
+		if err != nil {
+			w.Write([]byte("Error marshalling the organizations"))
+			return
+		}
+		w.Write(jsonOrganizations)
 	*/
 
 	repos, _ := githubClient.GetRepositories()
@@ -145,7 +145,7 @@ func (organizationsApi OrganizationsApi) GetRepositories(w http.ResponseWriter, 
 
 func (organizationsApi OrganizationsApi) CreateHook(w http.ResponseWriter, r *http.Request) {
 	oauth2Client := organizationsApi.OAuth2Manager.GetClient(r)
-    githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
+	githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
 	vars := mux.Vars(r)
 	orgId := vars["orgId"]
 	repoId := vars["repoId"]
@@ -159,7 +159,7 @@ func (organizationsApi OrganizationsApi) CreateHook(w http.ResponseWriter, r *ht
 
 func (organizationsApi OrganizationsApi) DeleteHook(w http.ResponseWriter, r *http.Request) {
 	oauth2Client := organizationsApi.OAuth2Manager.GetClient(r)
-    githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
+	githubClient := organizationsApi.GitHubManager.NewGitHubClient(oauth2Client)
 	vars := mux.Vars(r)
 	orgId := vars["orgId"]
 	repoId := vars["repoId"]
