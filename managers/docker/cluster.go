@@ -1,11 +1,11 @@
 // Copyright 2016 Telefónica Investigación y Desarrollo, S.A.U
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,27 +14,32 @@
 
 package docker
 
-type DockerClusterConfig struct {
-	Hosts		[]string
-	CertPath	string
-	TLSVerify	bool
+// ClusterConfig type.
+type ClusterConfig struct {
+	Hosts     []string
+	CertPath  string
+	TLSVerify bool
 }
 
-type DockerManagers []*DockerManager
+// Managers is the list of docker managers (cluster) available for executing builds.
+type Managers []*Manager
 
-func NewDockerClusterManager(dockerClusterConfig *DockerClusterConfig) DockerManagers {
-	dockerManagers := make([]*DockerManager, len(dockerClusterConfig.Hosts))
-	for i := range dockerClusterConfig.Hosts {
-		dockerConfig := &DockerConfig{
-			Host: dockerClusterConfig.Hosts[i],
-			CertPath: dockerClusterConfig.CertPath,
-			TLSVerify: dockerClusterConfig.TLSVerify,
+// NewManagers is the constructor for Managers
+func NewManagers(clusterConfig *ClusterConfig) Managers {
+	dockerManagers := make([]*Manager, len(clusterConfig.Hosts))
+	for i := range clusterConfig.Hosts {
+		dockerConfig := &Config{
+			Host:      clusterConfig.Hosts[i],
+			CertPath:  clusterConfig.CertPath,
+			TLSVerify: clusterConfig.TLSVerify,
 		}
-		dockerManagers[i] = NewDockerManager(dockerConfig)
+		dockerManagers[i] = NewManager(dockerConfig)
 	}
 	return dockerManagers
 }
 
-func (dockerManagers DockerManagers) Get() *DockerManager {
+// Get to obtain a docker manager from the cluster.
+func (dockerManagers Managers) Get() *Manager {
+	// TODO: Use a strategy to choose a manager in the cluster
 	return dockerManagers[0]
 }

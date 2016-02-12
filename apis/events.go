@@ -22,15 +22,20 @@ import (
 	"github.com/gocilla/gocilla/managers/github"
 )
 
-type EventsApi struct {
-	BuildManager *build.BuildManager
+// EventsAPI type.
+// API to receive GitHub events (e.g. a PullRequest or a Push).
+// Note that these events may launch a build if configured in gocilla.
+type EventsAPI struct {
+	BuildManager *build.Manager
 }
 
-func NewEventsApi(buildManager *build.BuildManager) *EventsApi {
-	return &EventsApi{buildManager}
+// NewEventsAPI is the constructor for EventsAPI type.
+func NewEventsAPI(buildManager *build.Manager) *EventsAPI {
+	return &EventsAPI{buildManager}
 }
 
-func (eventsApi EventsApi) LaunchBuild(w http.ResponseWriter, r *http.Request) {
+// LaunchBuild is the API resource that processes the GitHub event.
+func (eventsAPI EventsAPI) LaunchBuild(w http.ResponseWriter, r *http.Request) {
 	event, err := github.ParseEvent(r)
 	if err != nil {
 		log.Println("Error decoding build payload.", err)
@@ -42,6 +47,6 @@ func (eventsApi EventsApi) LaunchBuild(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		return
 	}
-	go eventsApi.BuildManager.Build(event)
+	go eventsAPI.BuildManager.Build(event)
 	w.WriteHeader(200)
 }

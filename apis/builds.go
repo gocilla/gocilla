@@ -22,16 +22,20 @@ import (
 	"github.com/gocilla/gocilla/managers/mongodb"
 )
 
-type BuildsApi struct {
+// BuildsAPI type.
+// API to manage the builds launched in the platform.
+type BuildsAPI struct {
 	Database *mongodb.Database
 }
 
-func NewBuildsApi(database *mongodb.Database) *BuildsApi {
-	return &BuildsApi{database}
+// NewBuildsAPI is the constructor for BuildsAPI type.
+func NewBuildsAPI(database *mongodb.Database) *BuildsAPI {
+	return &BuildsAPI{database}
 }
 
-func (buildsApi BuildsApi) GetBuilds(w http.ResponseWriter, r *http.Request) {
-	builds, err := buildsApi.Database.FindBuilds()
+// GetBuilds is an API resource to get the builds launched by the platform.
+func (buildsAPI BuildsAPI) GetBuilds(w http.ResponseWriter, r *http.Request) {
+	builds, err := buildsAPI.Database.FindBuilds()
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte("Error getting builds from database"))

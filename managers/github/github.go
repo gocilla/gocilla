@@ -1,11 +1,11 @@
 // Copyright 2016 Telefónica Investigación y Desarrollo, S.A.U
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,65 +20,70 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-	"net/http"
 
 	"github.com/google/go-github/github"
 )
 
-type GitHubConfig struct {
-	Events 		[]string `json:"events"`
-	EventsURL 	string   `json:"eventsUrl"`
+// Config type.
+type Config struct {
+	Events    []string `json:"events"`
+	EventsURL string   `json:"eventsUrl"`
 }
 
-type GitHubManager struct {
-	Config *GitHubConfig
+// Manager type.
+// Manager to use GitHub API.
+type Manager struct {
+	Config *Config
 }
 
-func NewGitHubManager(config *GitHubConfig) *GitHubManager {
-	return &GitHubManager{config}
+// NewManager is the constructor for a GitHug Manager.
+func NewManager(config *Config) *Manager {
+	return &Manager{config}
 }
 
-func (githubManager GitHubManager) NewGitHubClient(httpClient *http.Client) *GitHubClient {
+// Client type.
+type Client struct {
+	Client     *github.Client
+	HTTPClient *http.Client
+	Config     *Config
+}
+
+// NewClient is the constructor for a GitHub Client.
+func (githubManager Manager) NewClient(httpClient *http.Client) *Client {
 	client := github.NewClient(httpClient)
-	return &GitHubClient{client, httpClient, githubManager.Config}
+	return &Client{client, httpClient, githubManager.Config}
 }
 
-type GitHubClient struct {
-	Client *github.Client
-	HttpClient *http.Client
-	Config *GitHubConfig
-}
-
-func (githubClient GitHubClient) GetUser() (user *github.User, err error) {
+// GetUser to get the user profile in GitHub.
+func (githubClient Client) GetUser() (user *github.User, err error) {
 	user, _, err = githubClient.Client.Users.Get("")
 	return
 }
 
-func (githubClient GitHubClient) GetOrganizations() (organizations []github.Organization, err error) {
+// GetOrganizations to retrieve the user's organizations.
+func (githubClient Client) GetOrganizations() (organizations []github.Organization, err error) {
 	organizations, _, err = githubClient.Client.Organizations.List("", nil)
 	return
 }
 
-func (githubClient GitHubClient) GetRepositories() (repositories []github.Repository, err error) {
+// GetRepositories to retrieve the user's repositories.
+func (githubClient Client) GetRepositories() (repositories []github.Repository, err error) {
 	repositories, _, err = githubClient.Client.Repositories.List("", nil)
 	return
 }
-/*
-func (githubClient GitHubClient) GetRepositories(organization string) (repositories []github.Repository, err error) {
-	repositories, _, err = githubClient.Client.Repositories.List(organization, nil)
-	return
-}*/
 
-func (githubClient GitHubClient) CreateHook(owner, repo string) (hookId *int, err error) {
+// CreateHook to create a hook on a repository.
+func (githubClient Client) CreateHook(owner, repo string) (hookID *int, err error) {
 	hookName := "web"
 	hookConfig := &github.Hook{
-		Name: &hookName,
+		Name:   &hookName,
 		Events: githubClient.Config.Events,
 		Config: map[string]interface{}{
-			"url": githubClient.Config.EventsURL,
-    		"content_type": "json",
+			"url":          githubClient.Config.EventsURL,
+			"content_type": "json",
 		},
 	}
 	h, _, error := githubClient.Client.Repositories.CreateHook(owner, repo, hookConfig)
@@ -89,8 +94,9 @@ func (githubClient GitHubClient) CreateHook(owner, repo string) (hookId *int, er
 	return h.ID, nil
 }
 
-func (githubClient GitHubClient) DeleteHook(owner, repo string, hookId int) error {
-	_, error := githubClient.Client.Repositories.DeleteHook(owner, repo, hookId)
+// DeleteHook to remove a hook on a repository.
+func (githubClient Client) DeleteHook(owner, repo string, hookID int) error {
+	_, error := githubClient.Client.Repositories.DeleteHook(owner, repo, hookID)
 	if error != nil {
 		log.Println("Error deleting hook", error)
 		return error
@@ -98,8 +104,9 @@ func (githubClient GitHubClient) DeleteHook(owner, repo string, hookId int) erro
 	return nil
 }
 
-func (githubClient GitHubClient) GetFileContent(owner, repo, path, ref string) ([]byte, error) {
-	options := &github.RepositoryContentGetOptions{ref}
+// GetFileContent to download a file from a user's repository.
+func (githubClient Client) GetFileContent(owner, repo, path, ref string) ([]byte, error) {
+	options := &github.RepositoryContentGetOptions{Ref: ref}
 	fileContent, _, _, err := githubClient.Client.Repositories.GetContents(owner, repo, path, options)
 	if err != nil {
 		return nil, err
@@ -109,9 +116,10 @@ func (githubClient GitHubClient) GetFileContent(owner, repo, path, ref string) (
 	return decodedFileContent, nil
 }
 
-func (githubClient GitHubClient) GetFileSHA(owner, repo, path, ref string) (string, error) {
+// GetFileSHA to get the file SHA.
+func (githubClient Client) GetFileSHA(owner, repo, path, ref string) (string, error) {
 	log.Printf("GetFileSHA %s %s", path, ref)
-	options := &github.RepositoryContentGetOptions{ref}
+	options := &github.RepositoryContentGetOptions{Ref: ref}
 	fileContent, _, _, err := githubClient.Client.Repositories.GetContents(owner, repo, path, options)
 	if err != nil {
 		return "", err
@@ -119,14 +127,15 @@ func (githubClient GitHubClient) GetFileSHA(owner, repo, path, ref string) (stri
 	return *fileContent.SHA, nil
 }
 
-func (githubClient GitHubClient) DownloadProjectContent(owner, repo, ref string) (string, error) {
-	options := &github.RepositoryContentGetOptions{ref}
+// DownloadProjectContent to download a whole repository with a specific reference (SHA).
+func (githubClient Client) DownloadProjectContent(owner, repo, ref string) (string, error) {
+	options := &github.RepositoryContentGetOptions{Ref: ref}
 	url, _, err := githubClient.Client.Repositories.GetArchiveLink(owner, repo, github.Tarball, options)
 	if err != nil {
 		log.Println("Error in DownloadProjectContent")
 		return "", err
 	}
-	resp, err := githubClient.HttpClient.Get(url.String())
+	resp, err := githubClient.HTTPClient.Get(url.String())
 	if err != nil {
 		log.Println("Error getting the project tar.gz")
 		return "", err
@@ -198,11 +207,3 @@ func (githubClient GitHubClient) DownloadProjectContent(owner, repo, ref string)
 	}
 	return dir, nil
 }
-
-/*
-func (githubClient GitHubClient) DownloadDirectoryContent(owner, repo, path, ref string) (io.ReadCloser, error) {
-	options := &github.RepositoryContentGetOptions{ref}
-	return githubClient.Client.Repositories.GetContents(owner, repo, path, options)
-}
-
-*/

@@ -22,6 +22,7 @@ import (
 	"github.com/gocilla/gocilla/managers/oauth2"
 )
 
+// Profile type.
 type Profile struct {
 	Login     *string `json:"login,omitempty"`
 	Name      *string `json:"name,omitempty"`
@@ -29,19 +30,27 @@ type Profile struct {
 	Company   *string `json:"company,omitempty"`
 }
 
-type UsersApi struct {
-	OAuth2Manager *oauth2.OAuth2Manager
-	GitHubManager *github.GitHubManager
+// UsersAPI type.
+// API to manage GitHub users.
+type UsersAPI struct {
+	OAuth2Manager *oauth2.Manager
+	GitHubManager *github.Manager
 }
 
-func NewUsersApi(oauth2Manager *oauth2.OAuth2Manager, githubManager *github.GitHubManager) *UsersApi {
-	return &UsersApi{oauth2Manager, githubManager}
+// NewUsersAPI is the constructor of UsersAPI.
+func NewUsersAPI(oauth2Manager *oauth2.Manager, githubManager *github.Manager) *UsersAPI {
+	return &UsersAPI{oauth2Manager, githubManager}
 }
 
-func (usersApi UsersApi) GetProfile(w http.ResponseWriter, r *http.Request) {
-	oauth2Client := usersApi.OAuth2Manager.GetClient(r)
-	githubClient := usersApi.GitHubManager.NewGitHubClient(oauth2Client)
-	user, _ := githubClient.GetUser()
+// GetProfile is the API resource that returns the user's profile.
+func (usersAPI UsersAPI) GetProfile(w http.ResponseWriter, r *http.Request) {
+	oauth2Client := usersAPI.OAuth2Manager.GetClient(r)
+	githubClient := usersAPI.GitHubManager.NewClient(oauth2Client)
+	user, err := githubClient.GetUser()
+	if err != nil {
+		w.Write([]byte("Error getting the user from github"))
+		return
+	}
 	profile := Profile{user.Login, user.Name, user.AvatarURL, user.Company}
 	jsonProfile, err := json.Marshal(profile)
 	if err != nil {

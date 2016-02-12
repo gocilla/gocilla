@@ -23,22 +23,26 @@ import (
 	"github.com/gocilla/gocilla/managers/mongodb"
 )
 
-type ContainerBuildManager struct {
+// ContainerManager type.
+// Manager to execute a pipeline in a docker container.
+type ContainerManager struct {
 	database      *mongodb.Database
-	dockerManager *docker.DockerManager
-	buildSpec     *BuildSpec
-	pipeline      *BuildPipelineSpec
+	dockerManager *docker.Manager
+	buildSpec     *Spec
+	pipeline      *PipelineSpec
 	trigger       *mongodb.Trigger
 	event         *github.Event
 	dockerSHA     string
 }
 
-func NewContainerBuildManager(database *mongodb.Database, dockerManager *docker.DockerManager, buildSpec *BuildSpec,
-	pipeline *BuildPipelineSpec, trigger *mongodb.Trigger, event *github.Event, dockerSHA string) *ContainerBuildManager {
-	return &ContainerBuildManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA}
+// NewContainerManager is the constructor for ContainerManager.
+func NewContainerManager(database *mongodb.Database, dockerManager *docker.Manager, buildSpec *Spec,
+	pipeline *PipelineSpec, trigger *mongodb.Trigger, event *github.Event, dockerSHA string) *ContainerManager {
+	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA}
 }
 
-func (containerBuildManager *ContainerBuildManager) ExecutePipeline() error {
+// ExecutePipeline executes the pipeline corresponding to the build triggered.
+func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 	envVars := containerBuildManager.GetEnvironmentVariables()
 	event := containerBuildManager.event
 	dockerSHA := containerBuildManager.dockerSHA
@@ -73,7 +77,8 @@ func (containerBuildManager *ContainerBuildManager) ExecutePipeline() error {
 	return nil
 }
 
-func (containerBuildManager *ContainerBuildManager) GetEnvironmentVariables() []string {
+// GetEnvironmentVariables get the environment variables registered for the trigger.
+func (containerBuildManager *ContainerManager) GetEnvironmentVariables() []string {
 	var envVars []string
 	for _, envVar := range containerBuildManager.trigger.EnvVars {
 		log.Printf("Set env var %s to value: %s", envVar.Name, envVar.Value)
@@ -82,7 +87,8 @@ func (containerBuildManager *ContainerBuildManager) GetEnvironmentVariables() []
 	return envVars
 }
 
-func (containerBuildManager *ContainerBuildManager) GitProjectClone(containerManager *docker.ContainerManager, event *github.Event) error {
+// GitProjectClone clones a GitHub project in the container.
+func (containerBuildManager *ContainerManager) GitProjectClone(containerManager *docker.ContainerManager, event *github.Event) error {
 	commands := []string{
 		fmt.Sprintf("git clone %s .", event.GitURL),
 	}
@@ -104,7 +110,8 @@ func (containerBuildManager *ContainerBuildManager) GitProjectClone(containerMan
 	return nil
 }
 
-func (containerBuildManager *ContainerBuildManager) ExecutePipelineJobs(containerManager *docker.ContainerManager, buildWriter *mongodb.BuildWriter) error {
+// ExecutePipelineJobs executes the list of jobs of the pipeline.
+func (containerBuildManager *ContainerManager) ExecutePipelineJobs(containerManager *docker.ContainerManager, buildWriter *mongodb.BuildWriter) error {
 	for _, job := range containerBuildManager.pipeline.Jobs {
 		command := containerBuildManager.buildSpec.Jobs[job]
 		buildWriter.StartBuildTask(job, command)

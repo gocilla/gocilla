@@ -25,15 +25,17 @@ import (
 	"github.com/gocilla/gocilla/managers/session"
 )
 
+// Config type.
 type Config struct {
 	Port    uint16
-	OAuth2  *oauth2.OAuth2Config
-	GitHub  *github.GitHubConfig
-	Session *session.SessionConfig
-	Mongodb *mongodb.MongodbConfig
-	Docker  *docker.DockerClusterConfig
+	OAuth2  *oauth2.Config
+	GitHub  *github.Config
+	Session *session.Config
+	Mongodb *mongodb.Config
+	Docker  *docker.ClusterConfig
 }
 
+// Decode the JSON configuration stored in a file path.
 func Decode(path string) (config Config, err error) {
 	buf, error := ioutil.ReadFile(path)
 	if error != nil {

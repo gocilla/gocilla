@@ -27,35 +27,46 @@ import (
 	"github.com/gocilla/gocilla/managers/oauth2"
 )
 
-type BuildManager struct {
+// Manager type.
+// Manager to perform a build (after a trigger). It requires other managers:
+//   - GitHubManager to access to GitHub to download or clone the repository via API.
+//   - OAuth2Manager to help GitHubManager with OAuth2 access.
+//   - DockerManagers to launch a container to perform the build on a docker cluster.
+type Manager struct {
 	Database       *mongodb.Database
-	OAuth2Manager  *oauth2.OAuth2Manager
-	GitHubManager  *github.GitHubManager
-	DockerManagers docker.DockerManagers
+	OAuth2Manager  *oauth2.Manager
+	GitHubManager  *github.Manager
+	DockerManagers docker.Managers
 }
 
-type BuildSpec struct {
-	Docker    BuildDockerSpec
+// Spec type.
+type Spec struct {
+	Docker    DockerSpec
 	Jobs      map[string]string
-	Pipelines []BuildPipelineSpec
+	Pipelines []PipelineSpec
 }
 
-type BuildDockerSpec struct {
+// DockerSpec type.
+type DockerSpec struct {
 	File       string
 	User       string
 	WorkingDir string `json:"workingDir" yaml:"workingDir"`
 }
 
-type BuildPipelineSpec struct {
+// PipelineSpec type.
+type PipelineSpec struct {
 	Name string
 	Jobs []string
 }
 
-func NewBuildManager(database *mongodb.Database, oauth2Manager *oauth2.OAuth2Manager, githubManager *github.GitHubManager, dockerManagers docker.DockerManagers) *BuildManager {
-	return &BuildManager{database, oauth2Manager, githubManager, dockerManagers}
+// NewManager is the constructor of Manager.
+func NewManager(database *mongodb.Database, oauth2Manager *oauth2.Manager, githubManager *github.Manager, dockerManagers docker.Managers) *Manager {
+	return &Manager{database, oauth2Manager, githubManager, dockerManagers}
 }
 
-func (buildManager *BuildManager) Build(event *github.Event) error {
+// Build the project.
+// It uses the GitHub event to know which repository and git SHA to be build.
+func (buildManager *Manager) Build(event *github.Event) error {
 	log.Printf("Starting build process for event: %+v", event)
 
 	trigger, err := buildManager.Database.GetTrigger(event.Organization, event.Repository, event.Type, event.Branch)
@@ -72,8 +83,8 @@ func (buildManager *BuildManager) Build(event *github.Event) error {
 	}
 	log.Printf("Using hook: %+v", hook)
 
-	githubClient := buildManager.GitHubManager.NewGitHubClient(buildManager.OAuth2Manager.GetClientFromAccessToken(hook.AccessToken))
-	buildSpec, err := buildManager.GetBuildSpec(githubClient, event)
+	githubClient := buildManager.GitHubManager.NewClient(buildManager.OAuth2Manager.GetClientFromAccessToken(hook.AccessToken))
+	buildSpec, err := buildManager.GetSpec(githubClient, event)
 	if err != nil {
 		log.Printf("Error getting the pipeline. %s", err)
 		return err
@@ -91,25 +102,27 @@ func (buildManager *BuildManager) Build(event *github.Event) error {
 		return err
 	}
 
-	containerBuildManager := NewContainerBuildManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA)
-	if err := containerBuildManager.ExecutePipeline(); err != nil {
+	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA)
+	if err := containerManager.ExecutePipeline(); err != nil {
 		log.Printf("Error executing the pipeline. %s", err)
 		return err
 	}
 	return nil
 }
 
-func (buildManager *BuildManager) GetBuildSpec(githubClient *github.GitHubClient, event *github.Event) (*BuildSpec, error) {
+// GetSpec to retrieve .gocilla.yml from GitHub repository
+func (buildManager *Manager) GetSpec(githubClient *github.Client, event *github.Event) (*Spec, error) {
 	content, err := githubClient.GetFileContent(event.Organization, event.Repository, ".gocilla.yml", event.SHA)
 	if err != nil {
 		return nil, err
 	}
-	var buildSpec BuildSpec
+	var buildSpec Spec
 	err = yaml.Unmarshal(content, &buildSpec)
 	return &buildSpec, err
 }
 
-func (buildManager *BuildManager) GetPipeline(buildSpec *BuildSpec, trigger *mongodb.Trigger) *BuildPipelineSpec {
+// GetPipeline to get the pipeline to be executed according to the trigger that matches the GitHub event.
+func (buildManager *Manager) GetPipeline(buildSpec *Spec, trigger *mongodb.Trigger) *PipelineSpec {
 	for _, buildPipelineSpec := range buildSpec.Pipelines {
 		if buildPipelineSpec.Name == trigger.Pipeline {
 			return &buildPipelineSpec
@@ -118,7 +131,8 @@ func (buildManager *BuildManager) GetPipeline(buildSpec *BuildSpec, trigger *mon
 	return nil
 }
 
-func (buildManager *BuildManager) PrepareDockerImage(githubClient *github.GitHubClient, event *github.Event, buildSpec *BuildSpec) (*docker.DockerManager, string, error) {
+// PrepareDockerImage to set up the docker image.
+func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, event *github.Event, buildSpec *Spec) (*docker.Manager, string, error) {
 	dockerSHA, err := githubClient.GetFileSHA(event.Organization, event.Repository, buildSpec.Docker.File, event.SHA)
 	if err != nil {
 		return nil, dockerSHA, err

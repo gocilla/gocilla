@@ -1,11 +1,11 @@
 // Copyright 2016 Telefónica Investigación y Desarrollo, S.A.U
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,36 +21,40 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Build type.
 type Build struct {
-	Id bson.ObjectId `bson:"_id,omitempty" json:"id"`
-	Organization string `bson:"organization" json:"organization"`
-	Repository string `bson:"repository" json:"repository"`
-	Event string `bson:"event" json:"event"`
-	Branch string `bson:"branch" json:"branch"`
-	Pipeline string `bson:"pipeline" json:"pipeline"`
-	Status string `bson:"status" json:"status"`
-	Error string `bson:"error,omitempty" json:"error,omitempty"`
-	Start *time.Time `bson:"start" json:"start"`
-	End *time.Time `bson:"end,omitempty" json:"end,omitempty"`
-	EnvVars []string `bson:"envVars" json:"envVars"`
-	Tasks []*BuildTask `bson:"tasks" json:"tasks"`
+	ID           bson.ObjectId `bson:"_id,omitempty" json:"id"`
+	Organization string        `bson:"organization" json:"organization"`
+	Repository   string        `bson:"repository" json:"repository"`
+	Event        string        `bson:"event" json:"event"`
+	Branch       string        `bson:"branch" json:"branch"`
+	Pipeline     string        `bson:"pipeline" json:"pipeline"`
+	Status       string        `bson:"status" json:"status"`
+	Error        string        `bson:"error,omitempty" json:"error,omitempty"`
+	Start        *time.Time    `bson:"start" json:"start"`
+	End          *time.Time    `bson:"end,omitempty" json:"end,omitempty"`
+	EnvVars      []string      `bson:"envVars" json:"envVars"`
+	Tasks        []*BuildTask  `bson:"tasks" json:"tasks"`
 }
 
+// BuildTask type.
 type BuildTask struct {
-	Name string `bson:"name" json:"name"`
-	Command string `bson:"command" json:"command"`
-	Status string `bson:"status" json:"status"`
-	Error string `bson:"error,omitempty" json:"error,omitempty"`
-	Start time.Time `bson:"start" json:"start"`
-	End time.Time `bson:"end,omitempty" json:"end,omitempty"`
+	Name    string    `bson:"name" json:"name"`
+	Command string    `bson:"command" json:"command"`
+	Status  string    `bson:"status" json:"status"`
+	Error   string    `bson:"error,omitempty" json:"error,omitempty"`
+	Start   time.Time `bson:"start" json:"start"`
+	End     time.Time `bson:"end,omitempty" json:"end,omitempty"`
 }
 
+// CreateBuild to insert a new build.
 func (database *Database) CreateBuild(build *Build) error {
 	collection := database.Session.DB("").C("builds")
-	build.Id = bson.NewObjectId()
+	build.ID = bson.NewObjectId()
 	return collection.Insert(*build)
 }
 
+// FindBuilds to list the latest 10 builds.
 func (database *Database) FindBuilds() ([]Build, error) {
 	collection := database.Session.DB("").C("builds")
 	var builds []Build
@@ -58,6 +62,7 @@ func (database *Database) FindBuilds() ([]Build, error) {
 	return builds, err
 }
 
+// UpdateBuild to update the status of a build.
 func (database *Database) UpdateBuild(id bson.ObjectId, status, error string, end time.Time) error {
 	collection := database.Session.DB("").C("builds")
 	err := collection.UpdateId(
@@ -66,6 +71,7 @@ func (database *Database) UpdateBuild(id bson.ObjectId, status, error string, en
 	return err
 }
 
+// AddBuildTask to insert a task in a build.
 func (database *Database) AddBuildTask(id bson.ObjectId, buildTask *BuildTask) error {
 	collection := database.Session.DB("").C("builds")
 	err := collection.UpdateId(
@@ -74,6 +80,7 @@ func (database *Database) AddBuildTask(id bson.ObjectId, buildTask *BuildTask) e
 	return err
 }
 
+// UpdateBuildTask to update a task in a build.
 func (database *Database) UpdateBuildTask(id bson.ObjectId, counter int, status, error string, end time.Time) error {
 	collection := database.Session.DB("").C("builds")
 	err := collection.Update(
@@ -82,50 +89,55 @@ func (database *Database) UpdateBuildTask(id bson.ObjectId, counter int, status,
 	return err
 }
 
+// BuildWriter type.
 type BuildWriter struct {
-	Build *Build
-	Counter int
+	Build    *Build
+	Counter  int
 	Database *Database
 }
 
+// NewBuildWriter is a constructor.
 func NewBuildWriter(database *Database, trigger *Trigger, envVars []string) (*BuildWriter, error) {
 	now := time.Now()
 	build := &Build{
 		Organization: trigger.Organization,
-		Repository: trigger.Repository,
-		Event: trigger.Event,
-		Branch: trigger.Branch,
-		Pipeline: trigger.Pipeline,
-		Status: "running",
-		Start: &now,
-		EnvVars: envVars,
-		Tasks: []*BuildTask{},
+		Repository:   trigger.Repository,
+		Event:        trigger.Event,
+		Branch:       trigger.Branch,
+		Pipeline:     trigger.Pipeline,
+		Status:       "running",
+		Start:        &now,
+		EnvVars:      envVars,
+		Tasks:        []*BuildTask{},
 	}
 	buildWriter := &BuildWriter{
-		Build: build,
-		Counter: 0,
+		Build:    build,
+		Counter:  0,
 		Database: database,
 	}
 	err := database.CreateBuild(build)
 	return buildWriter, err
 }
 
+// StartBuildTask to insert a task, with "running" status, in a build.
 func (buildWriter *BuildWriter) StartBuildTask(name, command string) error {
 	buildTask := &BuildTask{
-		Name: name,
+		Name:    name,
 		Command: command,
-		Status: "running",
-		Start: time.Now(),
+		Status:  "running",
+		Start:   time.Now(),
 	}
-	return buildWriter.Database.AddBuildTask(buildWriter.Build.Id, buildTask)
+	return buildWriter.Database.AddBuildTask(buildWriter.Build.ID, buildTask)
 }
 
+// EndBuildTask to update a task, with completed status, in a build.
 func (buildWriter *BuildWriter) EndBuildTask(status, error string) error {
-	err := buildWriter.Database.UpdateBuildTask(buildWriter.Build.Id, buildWriter.Counter, status, error, time.Now())
+	err := buildWriter.Database.UpdateBuildTask(buildWriter.Build.ID, buildWriter.Counter, status, error, time.Now())
 	buildWriter.Counter++
 	return err
 }
 
+// EndBuild to update a build with completion status.
 func (buildWriter *BuildWriter) EndBuild(status, error string) error {
-	return buildWriter.Database.UpdateBuild(buildWriter.Build.Id, status, error, time.Now())
+	return buildWriter.Database.UpdateBuild(buildWriter.Build.ID, status, error, time.Now())
 }

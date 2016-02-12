@@ -21,9 +21,12 @@ import (
 	"github.com/gocilla/gocilla/managers/session"
 )
 
+// AuthenticateFunc type.
 type AuthenticateFunc func(http.HandlerFunc) http.HandlerFunc
 
-func Authenticate(sessionManager *session.SessionManager) AuthenticateFunc {
+// Authenticate is a middleware to enforce authentication if the user is not authenticated yet.
+// Authentication is performed via OAuth2.
+func Authenticate(sessionManager *session.Manager) AuthenticateFunc {
 	return func(fn http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			log.Println("Getting web session")

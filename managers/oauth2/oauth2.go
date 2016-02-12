@@ -24,42 +24,51 @@ import (
 	"github.com/gocilla/gocilla/managers/session"
 )
 
-type OAuth2Config struct {
+// Config type.
+type Config struct {
 	Strategy oauth2.Config
 	State    string
 }
 
-type OAuth2Manager struct {
-	Config         *OAuth2Config
-	SessionManager *session.SessionManager
+// Manager type.
+// Manager to handle an OAuth2 session. OAuth2 is required to invoke the GitHub APIs on behalf the user.
+type Manager struct {
+	Config         *Config
+	SessionManager *session.Manager
 }
 
-func NewOAuth2Manager(config *OAuth2Config, sessionManager *session.SessionManager) *OAuth2Manager {
-	return &OAuth2Manager{config, sessionManager}
+// NewManager is the constructor for OAuth2 Manager.
+func NewManager(config *Config, sessionManager *session.Manager) *Manager {
+	return &Manager{config, sessionManager}
 }
 
-func (oauth2Manager OAuth2Manager) SetSessionAccessToken(accessToken string, w http.ResponseWriter, r *http.Request) {
+// SetSessionAccessToken to store the OAuth2 access token in the session
+func (oauth2Manager Manager) SetSessionAccessToken(accessToken string, w http.ResponseWriter, r *http.Request) {
 	session, _ := oauth2Manager.SessionManager.GetSession(r)
 	session.Values["accessToken"] = accessToken
 	session.Save(r, w)
 	log.Printf("Stored token %s in web session", accessToken)
 }
 
-func (oauth2Manager OAuth2Manager) GetSessionAccessToken(r *http.Request) string {
+// GetSessionAccessToken to get the OAuth2 access token from the session.
+func (oauth2Manager Manager) GetSessionAccessToken(r *http.Request) string {
 	session, _ := oauth2Manager.SessionManager.GetSession(r)
 	if session != nil && session.Values["accessToken"] != nil {
 		return session.Values["accessToken"].(string)
-	} else {
-		return ""
 	}
+	return ""
 }
 
-func (oauth2Manager OAuth2Manager) GetClient(r *http.Request) *http.Client {
+// GetClient to set up an OAuth2 HTTP client able to access GitHub APIs. The access token
+// is obtained from the session.
+func (oauth2Manager Manager) GetClient(r *http.Request) *http.Client {
 	accessToken := oauth2Manager.GetSessionAccessToken(r)
 	return oauth2Manager.GetClientFromAccessToken(accessToken)
 }
 
-func (oauth2Manager OAuth2Manager) GetClientFromAccessToken(accessToken string) *http.Client {
+// GetClientFromAccessToken to set up an OAuth2 HTTP client able to access GitHub APIs. The access token
+// is passed as a parameter.
+func (oauth2Manager Manager) GetClientFromAccessToken(accessToken string) *http.Client {
 	token := &oauth2.Token{
 		AccessToken: accessToken,
 		TokenType:   "bearer",
@@ -67,7 +76,8 @@ func (oauth2Manager OAuth2Manager) GetClientFromAccessToken(accessToken string) 
 	return oauth2Manager.Config.Strategy.Client(oauth2.NoContext, token)
 }
 
-func (oauth2Manager OAuth2Manager) Authorize(w http.ResponseWriter, r *http.Request) {
+// Authorize to request for OAuth2 authorization against GitHub.
+func (oauth2Manager Manager) Authorize(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Got token from cookie: %s", oauth2Manager.GetSessionAccessToken(r))
 	strategy := oauth2Manager.Config.Strategy
 	state := oauth2Manager.Config.State
@@ -75,7 +85,8 @@ func (oauth2Manager OAuth2Manager) Authorize(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func (oauth2Manager OAuth2Manager) AuthorizeCallback(w http.ResponseWriter, r *http.Request) {
+// AuthorizeCallback to handle the authorize callback from GitHub.
+func (oauth2Manager Manager) AuthorizeCallback(w http.ResponseWriter, r *http.Request) {
 	log.Println("En AuthorizeCallback")
 	strategy := oauth2Manager.Config.Strategy
 	state := oauth2Manager.Config.State
@@ -101,7 +112,8 @@ func (oauth2Manager OAuth2Manager) AuthorizeCallback(w http.ResponseWriter, r *h
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
-func (oauth2Manager OAuth2Manager) Logout(w http.ResponseWriter, r *http.Request) {
+// Logout to destroy the session.
+func (oauth2Manager Manager) Logout(w http.ResponseWriter, r *http.Request) {
 	log.Println("En Logout")
 	oauth2Manager.SessionManager.DestroySession(w, r)
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)

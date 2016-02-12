@@ -44,37 +44,37 @@ func main() {
 	defer database.Close()
 
 	// Managers
-	sessionManager := session.NewSessionManager(config.Session)
-	oauth2Manager := oauth2.NewOAuth2Manager(config.OAuth2, sessionManager)
-	githubManager := github.NewGitHubManager(config.GitHub)
-	dockerManagers := docker.NewDockerClusterManager(config.Docker)
-	buildManager := build.NewBuildManager(database, oauth2Manager, githubManager, dockerManagers)
+	sessionManager := session.NewManager(config.Session)
+	oauth2Manager := oauth2.NewManager(config.OAuth2, sessionManager)
+	githubManager := github.NewManager(config.GitHub)
+	dockerManagers := docker.NewManagers(config.Docker)
+	buildManager := build.NewManager(database, oauth2Manager, githubManager, dockerManagers)
 
 	// Middlewares
 	authenticate := middlewares.Authenticate(sessionManager)
 
 	// Apis
-	buildsApi := apis.NewBuildsApi(database)
-	eventsApi := apis.NewEventsApi(buildManager)
-	organizationsApi := apis.NewOrganizationsApi(database, oauth2Manager, githubManager)
-	triggersApi := apis.NewTriggersApi(database)
-	usersApi := apis.NewUsersApi(oauth2Manager, githubManager)
+	buildsAPI := apis.NewBuildsAPI(database)
+	eventsAPI := apis.NewEventsAPI(buildManager)
+	organizationsAPI := apis.NewOrganizationsAPI(database, oauth2Manager, githubManager)
+	triggersAPI := apis.NewTriggersAPI(database)
+	usersAPI := apis.NewUsersAPI(oauth2Manager, githubManager)
 
 	// Routing
 	r := mux.NewRouter()
 	r.HandleFunc("/login", oauth2Manager.Authorize).Methods("GET")
 	r.HandleFunc("/login/callback", oauth2Manager.AuthorizeCallback).Methods("GET")
 	r.HandleFunc("/logout", oauth2Manager.Logout).Methods("GET")
-	r.HandleFunc("/api/builds", buildsApi.GetBuilds).Methods("GET")
-	r.HandleFunc("/api/events", eventsApi.LaunchBuild).Methods("POST")
-	r.HandleFunc("/api/organizations", authenticate(organizationsApi.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/api/builds", buildsAPI.GetBuilds).Methods("GET")
+	r.HandleFunc("/api/events", eventsAPI.LaunchBuild).Methods("POST")
+	r.HandleFunc("/api/organizations", authenticate(organizationsAPI.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(organizationsApi.CreateHook)).Methods("POST")
+		authenticate(organizationsAPI.CreateHook)).Methods("POST")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(organizationsApi.DeleteHook)).Methods("DELETE")
-	r.HandleFunc("/api/profile", middlewares.LoggingHandler(authenticate(usersApi.GetProfile))).Methods("GET")
-	r.HandleFunc("/api/triggers", triggersApi.GetTriggers).Methods("GET")
-	r.HandleFunc("/api/triggers", triggersApi.CreateTrigger).Methods("POST")
+		authenticate(organizationsAPI.DeleteHook)).Methods("DELETE")
+	r.HandleFunc("/api/profile", middlewares.LoggingHandler(authenticate(usersAPI.GetProfile))).Methods("GET")
+	r.HandleFunc("/api/triggers", triggersAPI.GetTriggers).Methods("GET")
+	r.HandleFunc("/api/triggers", triggersAPI.CreateTrigger).Methods("POST")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 	http.Handle("/", r)
 	log.Println("Listening at", config.Port)
