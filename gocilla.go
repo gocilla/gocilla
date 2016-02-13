@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -33,7 +34,13 @@ import (
 )
 
 func main() {
-	config, err := config.Decode("config.json")
+	// Read the configuration
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.json"
+	}
+	log.Println("Configuration path:", configPath)
+	config, err := config.Decode(configPath)
 	if err != nil {
 		log.Println("Configuration error:", err)
 		return

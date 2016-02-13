@@ -2,11 +2,50 @@
 
 Continuous integration server, fully implemented in [Go](https://golang.org), focused on the whole process of [continuous delivery](https://en.wikipedia.org/wiki/Continuous_delivery). It is inspired by [travis](https://travis-ci.org), [jenkins](https://jenkins-ci.org/), and other tools.
 
+## Architecture
+
+![Architecture](docs/architecture.png)
+
 ## Installation
 
 ```
 go get github.com/gocilla/gocilla
 ```
+
+## Configuration
+
+Gocilla is set up with a JSON configuration file. There is a default configuration at `${GOPATH}/src/github.com/gocilla/gocilla/config.json` that should be cloned to prepare custom settings.
+
+Gocilla uses the environment variable `CONFIG_PATH` to locate the configuration file. If this variable is unset, then it is located at `${PWD}/config.json`.
+
+## Start
+
+### Initial requirements
+
+#### mongoDB
+
+Some information is stored in the database like the builds, the hooks, and access tokens to access GitHub API.
+
+#### Developer application at GitHub
+
+Register a new developer application at [GitHub](https://github.com/settings/applications/new) to enable Gocilla to interact with GitHub API. The authorization callback URL should be:
+
+```http://{GOCILLA_HOST}:{GOCILLA_PORT}/login/callback```
+
+This URL might be `http://localhost:3000/login/callback` in a development configuration. Note that this URL is not accessed by GitHub but by the user's browser after a HTTP redirection during the OAuth process.
+
+The **Client ID** and **Client Secret** of the application correspond to configuration properties **oauth2.strategy.clientID** and **clientSecret** respectively.
+
+### Launching Gocilla
+
+```bash
+export CONFIG_PATH=${HOME}/.gocilla/config.json
+gocilla
+```
+
+**NOTE**: It is expected that `${GOPATH}/bin` is included in the `PATH`. It is also expected that the custom configuration for Gocilla is available at `${HOME}/.gocilla/config.json`.
+
+You can access to Gocilla site with your web browser at [http://localhost:3000](http://localhost:3000).
 
 ## License
 
