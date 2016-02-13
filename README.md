@@ -30,7 +30,9 @@ Some information is stored in the database like the builds, the hooks, and acces
 
 Register a new developer application at [GitHub](https://github.com/settings/applications/new) to enable Gocilla to interact with GitHub API. The authorization callback URL should be:
 
-```http://{GOCILLA_HOST}:{GOCILLA_PORT}/login/callback```
+```
+http://{GOCILLA_HOST}:{GOCILLA_PORT}/login/callback
+```
 
 This URL might be `http://localhost:3000/login/callback` in a development configuration. Note that this URL is not accessed by GitHub but by the user's browser after a HTTP redirection during the OAuth process.
 
