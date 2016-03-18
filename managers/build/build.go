@@ -15,6 +15,7 @@
 package build
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,6 +45,7 @@ type Spec struct {
 	Docker    DockerSpec
 	Jobs      map[string]string
 	Pipelines []PipelineSpec
+	Triggers  []TriggerSpec
 }
 
 // DockerSpec type.
@@ -59,6 +61,15 @@ type PipelineSpec struct {
 	Jobs []string
 }
 
+// TriggerSpec type.
+type TriggerSpec struct {
+	Name     string
+	Event    string
+	Branch   string
+	Pipeline string
+	EnvVars  map[string]string
+}
+
 // NewManager is the constructor of Manager.
 func NewManager(database *mongodb.Database, oauth2Manager *oauth2.Manager, githubManager *github.Manager, dockerManagers docker.Managers) *Manager {
 	return &Manager{database, oauth2Manager, githubManager, dockerManagers}
@@ -68,13 +79,6 @@ func NewManager(database *mongodb.Database, oauth2Manager *oauth2.Manager, githu
 // It uses the GitHub event to know which repository and git SHA to be build.
 func (buildManager *Manager) Build(event *github.Event) error {
 	log.Printf("Starting build process for event: %+v", event)
-
-	trigger, err := buildManager.Database.GetTrigger(event.Organization, event.Repository, event.Type, event.Branch)
-	if err != nil {
-		log.Printf("Error getting trigger. %s", err)
-		return err
-	}
-	log.Printf("Trigger: %+v", trigger)
 
 	hook, err := buildManager.Database.GetHook(event.Organization, event.Repository)
 	if err != nil {
@@ -86,15 +90,20 @@ func (buildManager *Manager) Build(event *github.Event) error {
 	githubClient := buildManager.GitHubManager.NewClient(buildManager.OAuth2Manager.GetClientFromAccessToken(hook.AccessToken))
 	buildSpec, err := buildManager.GetSpec(githubClient, event)
 	if err != nil {
-		log.Printf("Error getting the pipeline. %s", err)
+		log.Printf("Error getting the project specification. %s", err)
 		return err
+	}
+
+	trigger := buildManager.GetTrigger(buildSpec, event)
+	if trigger == nil {
+		return fmt.Errorf("No trigger matching the event '%s' and branch '%s'", event.Type, event.Branch)
 	}
 
 	pipeline := buildManager.GetPipeline(buildSpec, trigger)
 	if pipeline == nil {
-		log.Printf("No pipeline matching the trigger pipeline: %s", trigger.Pipeline)
-		return err
+		return fmt.Errorf("No pipeline matching the trigger pipeline: %s", trigger.Pipeline)
 	}
+	log.Printf("Pipeline to be executed: %s", trigger.Pipeline)
 
 	dockerManager, dockerSHA, err := buildManager.PrepareDockerImage(githubClient, event, buildSpec)
 	if err != nil {
@@ -121,11 +130,21 @@ func (buildManager *Manager) GetSpec(githubClient *github.Client, event *github.
 	return &buildSpec, err
 }
 
+// GetTrigger to get the trigger matching the GitHub event from the build spec.
+func (buildManager *Manager) GetTrigger(buildSpec *Spec, event *github.Event) *TriggerSpec {
+	for _, triggerSpec := range buildSpec.Triggers {
+		if triggerSpec.Event == event.Type && triggerSpec.Branch == event.Branch {
+			return &triggerSpec
+		}
+	}
+	return nil
+}
+
 // GetPipeline to get the pipeline to be executed according to the trigger that matches the GitHub event.
-func (buildManager *Manager) GetPipeline(buildSpec *Spec, trigger *mongodb.Trigger) *PipelineSpec {
-	for _, buildPipelineSpec := range buildSpec.Pipelines {
-		if buildPipelineSpec.Name == trigger.Pipeline {
-			return &buildPipelineSpec
+func (buildManager *Manager) GetPipeline(buildSpec *Spec, triggerSpec *TriggerSpec) *PipelineSpec {
+	for _, pipelineSpec := range buildSpec.Pipelines {
+		if pipelineSpec.Name == triggerSpec.Pipeline {
+			return &pipelineSpec
 		}
 	}
 	return nil

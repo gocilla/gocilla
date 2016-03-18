@@ -23,18 +23,18 @@ import (
 
 // Build type.
 type Build struct {
-	ID           bson.ObjectId `bson:"_id,omitempty" json:"id"`
-	Organization string        `bson:"organization" json:"organization"`
-	Repository   string        `bson:"repository" json:"repository"`
-	Event        string        `bson:"event" json:"event"`
-	Branch       string        `bson:"branch" json:"branch"`
-	Pipeline     string        `bson:"pipeline" json:"pipeline"`
-	Status       string        `bson:"status" json:"status"`
-	Error        string        `bson:"error,omitempty" json:"error,omitempty"`
-	Start        *time.Time    `bson:"start" json:"start"`
-	End          *time.Time    `bson:"end,omitempty" json:"end,omitempty"`
-	EnvVars      []string      `bson:"envVars" json:"envVars"`
-	Tasks        []*BuildTask  `bson:"tasks" json:"tasks"`
+	ID           bson.ObjectId     `bson:"_id,omitempty" json:"id"`
+	Organization string            `bson:"organization" json:"organization"`
+	Repository   string            `bson:"repository" json:"repository"`
+	Event        string            `bson:"event" json:"event"`
+	Branch       string            `bson:"branch" json:"branch"`
+	Pipeline     string            `bson:"pipeline" json:"pipeline"`
+	Status       string            `bson:"status" json:"status"`
+	Error        string            `bson:"error,omitempty" json:"error,omitempty"`
+	Start        *time.Time        `bson:"start" json:"start"`
+	End          *time.Time        `bson:"end,omitempty" json:"end,omitempty"`
+	EnvVars      map[string]string `bson:"envVars" json:"envVars"`
+	Tasks        []*BuildTask      `bson:"tasks" json:"tasks"`
 }
 
 // BuildTask type.
@@ -97,14 +97,15 @@ type BuildWriter struct {
 }
 
 // NewBuildWriter is a constructor.
-func NewBuildWriter(database *Database, trigger *Trigger, envVars []string) (*BuildWriter, error) {
+func NewBuildWriter(database *Database, organization, repository, event, branch, pipeline string,
+	envVars map[string]string) (*BuildWriter, error) {
 	now := time.Now()
 	build := &Build{
-		Organization: trigger.Organization,
-		Repository:   trigger.Repository,
-		Event:        trigger.Event,
-		Branch:       trigger.Branch,
-		Pipeline:     trigger.Pipeline,
+		Organization: organization,
+		Repository:   repository,
+		Event:        event,
+		Branch:       branch,
+		Pipeline:     pipeline,
 		Status:       "running",
 		Start:        &now,
 		EnvVars:      envVars,

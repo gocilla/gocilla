@@ -62,6 +62,16 @@ func GetTaggedImageName(organization, repository, sha string) string {
 	return fmt.Sprintf("%s:%s", GetImageName(organization, repository), GetTagName(sha))
 }
 
+// GetEnv get an array of environment variables where each array element corresponds
+// to an envVars object with format: {key}={value}.
+func GetEnv(envVars map[string]string) []string {
+	var env []string
+	for key, value := range envVars {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
+}
+
 // NewManager is the constructor for Manager.
 func NewManager(dockerConfig *Config) *Manager {
 	ca := fmt.Sprintf("%s/ca.pem", dockerConfig.CertPath)
@@ -118,12 +128,12 @@ func (dockerManager *Manager) ExistsImage(organization, repository, sha string) 
 }
 
 // CreateAndStartContainer creates and starts a docker container.
-func (dockerManager *Manager) CreateAndStartContainer(organization, repository, sha, user, workingDir string, env []string) (*ContainerManager, error) {
+func (dockerManager *Manager) CreateAndStartContainer(organization, repository, sha, user, workingDir string, envVars map[string]string) (*ContainerManager, error) {
 	imageName := GetTaggedImageName(organization, repository, sha)
 	log.Printf("CreateAndStartContainer for image: %s", imageName)
 	log.Printf("WorkingDir: %s", workingDir)
 	containerOptions := docker.CreateContainerOptions{
-		Config: &docker.Config{Image: imageName, Env: env, User: user, WorkingDir: workingDir, Memory: 1024000000},
+		Config: &docker.Config{Image: imageName, Env: GetEnv(envVars), User: user, WorkingDir: workingDir, Memory: 1024000000},
 	}
 	container, err := dockerManager.Client.CreateContainer(containerOptions)
 	if err != nil {

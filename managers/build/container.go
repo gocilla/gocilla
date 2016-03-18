@@ -30,24 +30,30 @@ type ContainerManager struct {
 	dockerManager *docker.Manager
 	buildSpec     *Spec
 	pipeline      *PipelineSpec
-	trigger       *mongodb.Trigger
+	trigger       *TriggerSpec
 	event         *github.Event
 	dockerSHA     string
 }
 
 // NewContainerManager is the constructor for ContainerManager.
 func NewContainerManager(database *mongodb.Database, dockerManager *docker.Manager, buildSpec *Spec,
-	pipeline *PipelineSpec, trigger *mongodb.Trigger, event *github.Event, dockerSHA string) *ContainerManager {
+	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string) *ContainerManager {
 	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA}
 }
 
 // ExecutePipeline executes the pipeline corresponding to the build triggered.
 func (containerBuildManager *ContainerManager) ExecutePipeline() error {
-	envVars := containerBuildManager.GetEnvironmentVariables()
 	event := containerBuildManager.event
 	dockerSHA := containerBuildManager.dockerSHA
 
-	buildWriter, err := mongodb.NewBuildWriter(containerBuildManager.database, containerBuildManager.trigger, envVars)
+	buildWriter, err := mongodb.NewBuildWriter(
+		containerBuildManager.database,
+		containerBuildManager.event.Organization,
+		containerBuildManager.event.Repository,
+		containerBuildManager.event.Type,
+		containerBuildManager.event.Branch,
+		containerBuildManager.trigger.Pipeline,
+		containerBuildManager.trigger.EnvVars)
 	if err != nil {
 		log.Println("Error creating build writer:", err)
 		return err
@@ -55,7 +61,9 @@ func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 
 	user := containerBuildManager.buildSpec.Docker.User
 	workingDir := containerBuildManager.buildSpec.Docker.WorkingDir
-	containerManager, err := containerBuildManager.dockerManager.CreateAndStartContainer(event.Organization, event.Repository, dockerSHA, user, workingDir, envVars)
+	containerManager, err := containerBuildManager.dockerManager.CreateAndStartContainer(
+		event.Organization, event.Repository, dockerSHA, user, workingDir,
+		containerBuildManager.trigger.EnvVars)
 	if err != nil {
 		log.Println("Error creating and starting the container:", err)
 		buildWriter.EndBuild("error", "Error creating and starting the container")
@@ -75,16 +83,6 @@ func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 	log.Printf("Completed successfully execution of pipeline '%s'", containerBuildManager.pipeline.Name)
 	buildWriter.EndBuild("success", "")
 	return nil
-}
-
-// GetEnvironmentVariables get the environment variables registered for the trigger.
-func (containerBuildManager *ContainerManager) GetEnvironmentVariables() []string {
-	var envVars []string
-	for _, envVar := range containerBuildManager.trigger.EnvVars {
-		log.Printf("Set env var %s to value: %s", envVar.Name, envVar.Value)
-		envVars = append(envVars, fmt.Sprintf("%s=%s", envVar.Name, envVar.Value))
-	}
-	return envVars
 }
 
 // GitProjectClone clones a GitHub project in the container.
