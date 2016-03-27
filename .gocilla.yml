@@ -1,0 +1,29 @@
+docker:
+  file: delivery/docker/Dockerfile
+
+jobs:
+  build: go build
+
+pipelines:
+  - name: pipeline-pull
+    jobs:
+      - build
+
+  - name: pipeline-dev
+    jobs:
+      - build
+
+triggers:
+  - name: pull
+    event: pull
+    branch: master
+    pipeline: pipeline-pull
+    envVars:
+      ENVIRONMENT: pull
+  
+  - name: dev
+    event: push
+    branch: master
+    pipeline: pipeline-dev
+    envVars:
+      ENVIRONMENT: dev
