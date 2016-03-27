@@ -47,6 +47,11 @@ func (eventsAPI EventsAPI) LaunchBuild(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		return
 	}
-	go eventsAPI.BuildManager.Build(event)
+	go func() {
+		err := eventsAPI.BuildManager.Build(event)
+		if err != nil {
+			log.Println("Error in build", err)
+		}
+	}()
 	w.WriteHeader(200)
 }

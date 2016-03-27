@@ -16,6 +16,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -105,17 +106,25 @@ func (buildManager *Manager) Build(event *github.Event) error {
 	}
 	log.Printf("Pipeline to be executed: %s", trigger.Pipeline)
 
-	dockerManager, dockerSHA, err := buildManager.PrepareDockerImage(githubClient, event, buildSpec)
+	// Write logs to a mongodb gridfs file and to console
+	buildLogFile := fmt.Sprintf("/%s/%s/%s", event.Organization, event.Repository, event.SHA)
+	buildMongoLog, err := buildManager.Database.CreateFile(buildLogFile)
 	if err != nil {
-		log.Printf("Error preparing the docker image. %s", err)
-		return err
+		return fmt.Errorf("Error creating build mongo log file: %s. %s", buildLogFile, err)
+	}
+	buildLog := io.MultiWriter(buildMongoLog, os.Stdout)
+	defer buildMongoLog.Close()
+
+	dockerManager, dockerSHA, err := buildManager.PrepareDockerImage(githubClient, event, buildSpec, buildLog)
+	if err != nil {
+		return fmt.Errorf("Error preparing the docker image. %s", err)
 	}
 
-	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA)
+	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildLog)
 	if err := containerManager.ExecutePipeline(); err != nil {
-		log.Printf("Error executing the pipeline. %s", err)
-		return err
+		return fmt.Errorf("Error executing the pipeline. %s", err)
 	}
+
 	return nil
 }
 
@@ -151,7 +160,7 @@ func (buildManager *Manager) GetPipeline(buildSpec *Spec, triggerSpec *TriggerSp
 }
 
 // PrepareDockerImage to set up the docker image.
-func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, event *github.Event, buildSpec *Spec) (*docker.Manager, string, error) {
+func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, event *github.Event, buildSpec *Spec, buildLog io.Writer) (*docker.Manager, string, error) {
 	dockerSHA, err := githubClient.GetFileSHA(event.Organization, event.Repository, buildSpec.Docker.File, event.SHA)
 	if err != nil {
 		return nil, dockerSHA, err
@@ -169,7 +178,7 @@ func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, eve
 
 		dockerfileDir := filepath.Dir(filepath.Join(dir, buildSpec.Docker.File))
 		log.Printf("Directory to build the docker image: %s", dockerfileDir)
-		err = dockerManager.BuildImage(event.Organization, event.Repository, dockerSHA, dockerfileDir)
+		err = dockerManager.BuildImage(event.Organization, event.Repository, dockerSHA, dockerfileDir, buildLog)
 		if err != nil {
 			log.Println("Error building docker image", err)
 			return nil, dockerSHA, err
