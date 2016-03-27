@@ -27,3 +27,4 @@ triggers:
     pipeline: pipeline-dev
     envVars:
       ENVIRONMENT: dev
+
