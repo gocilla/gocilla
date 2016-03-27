@@ -15,11 +15,9 @@
 package docker
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
@@ -82,21 +80,9 @@ func NewManager(dockerConfig *Config) *Manager {
 }
 
 // BuildImage to build a docker image.
-func (dockerManager *Manager) BuildImage(organization, repository, sha, directory string) error {
+func (dockerManager *Manager) BuildImage(organization, repository, sha, directory string, w io.Writer) error {
 	imageName := GetImageName(organization, repository)
 
-	r, w := io.Pipe()
-	go func(reader io.Reader) {
-		scanner := bufio.NewScanner(reader)
-		for scanner.Scan() {
-			log.Println(scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "There was an error with the scanner in attached container", err)
-		}
-	}(r)
-
-	//var buf bytes.Buffer
 	buildImageOptions := docker.BuildImageOptions{
 		Name:         imageName,
 		ContextDir:   directory,
@@ -158,18 +144,7 @@ func (containerManager *ContainerManager) RemoveContainer() error {
 }
 
 // ExecContainer executes a command on a running docker container.
-func (containerManager *ContainerManager) ExecContainer(command string) (string, error) {
-	r, w := io.Pipe()
-	go func(reader io.Reader) {
-		scanner := bufio.NewScanner(reader)
-		for scanner.Scan() {
-			log.Println(scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "There was an error with the scanner in attached container", err)
-		}
-	}(r)
-
+func (containerManager *ContainerManager) ExecContainer(command string, w io.Writer) error {
 	execOptions := docker.CreateExecOptions{
 		Container:    containerManager.Container.ID,
 		AttachStdin:  true,
@@ -181,21 +156,18 @@ func (containerManager *ContainerManager) ExecContainer(command string) (string,
 	exec, err := containerManager.Client.CreateExec(execOptions)
 	if err != nil {
 		log.Println("Error creating the execution of command", command)
-		return "", err
+		return err
 	}
 
-	//var buffer bytes.Buffer
 	startExecOptions := docker.StartExecOptions{
-		Detach: false,
-		//OutputStream: &buffer,
-		//ErrorStream:  &buffer,
+		Detach:       false,
 		OutputStream: w,
 		ErrorStream:  w,
 	}
 	err = containerManager.Client.StartExec(exec.ID, startExecOptions)
 	if err != nil {
 		log.Println("Error starting the execution of command", command)
-		return "", err
+		return err
 	}
 	inspect, err := containerManager.Client.InspectExec(exec.ID)
 	if err != nil {
@@ -206,6 +178,5 @@ func (containerManager *ContainerManager) ExecContainer(command string) (string,
 		err = fmt.Errorf("Invalid exit code: %d", inspect.ExitCode)
 	}
 
-	//return buffer.String(), err
-	return "", err
+	return err
 }

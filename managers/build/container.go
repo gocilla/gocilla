@@ -16,6 +16,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/gocilla/gocilla/managers/docker"
@@ -33,12 +34,13 @@ type ContainerManager struct {
 	trigger       *TriggerSpec
 	event         *github.Event
 	dockerSHA     string
+	buildLog      io.Writer
 }
 
 // NewContainerManager is the constructor for ContainerManager.
 func NewContainerManager(database *mongodb.Database, dockerManager *docker.Manager, buildSpec *Spec,
-	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string) *ContainerManager {
-	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA}
+	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string, buildLog io.Writer) *ContainerManager {
+	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildLog}
 }
 
 // ExecutePipeline executes the pipeline corresponding to the build triggered.
@@ -61,6 +63,7 @@ func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 
 	user := containerBuildManager.buildSpec.Docker.User
 	workingDir := containerBuildManager.buildSpec.Docker.WorkingDir
+	log.Println("En CreateAndStartContainer")
 	containerManager, err := containerBuildManager.dockerManager.CreateAndStartContainer(
 		event.Organization, event.Repository, dockerSHA, user, workingDir,
 		containerBuildManager.trigger.EnvVars)
@@ -71,11 +74,13 @@ func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 	}
 	defer containerManager.RemoveContainer()
 
+	log.Println("En GitProjectClone")
 	if err := containerBuildManager.GitProjectClone(containerManager, event); err != nil {
 		buildWriter.EndBuild("error", "Error cloning the project")
 		return err
 	}
 
+	log.Println("En ExecutePipelineJobs")
 	if err := containerBuildManager.ExecutePipelineJobs(containerManager, buildWriter); err != nil {
 		buildWriter.EndBuild("error", "Error executing the pipeline")
 		return err
@@ -98,8 +103,7 @@ func (containerBuildManager *ContainerManager) GitProjectClone(containerManager 
 	}
 	for _, command := range commands {
 		log.Printf("Executing command: %s", command)
-		buf, err := containerManager.ExecContainer(command)
-		log.Println(buf)
+		err := containerManager.ExecContainer(command, containerBuildManager.buildLog)
 		if err != nil {
 			log.Println("Error executing command", err)
 			return err
@@ -114,8 +118,7 @@ func (containerBuildManager *ContainerManager) ExecutePipelineJobs(containerMana
 		command := containerBuildManager.buildSpec.Jobs[job]
 		buildWriter.StartBuildTask(job, command)
 		log.Printf("Executing job '%s' with command: %s", job, command)
-		buf, err := containerManager.ExecContainer(command)
-		log.Printf("Executed job with output:\n%s", buf)
+		err := containerManager.ExecContainer(command, containerBuildManager.buildLog)
 		if err != nil {
 			log.Println("Error executing command", err)
 			buildWriter.EndBuildTask("error", "Error executing command")
