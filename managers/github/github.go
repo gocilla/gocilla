@@ -27,6 +27,8 @@ import (
 	"github.com/google/go-github/github"
 )
 
+const pageSize = 1000
+
 // Config type.
 type Config struct {
 	Events    []string `json:"events"`
@@ -71,7 +73,9 @@ func (githubClient Client) GetOrganizations() (organizations []github.Organizati
 
 // GetRepositories to retrieve the user's repositories.
 func (githubClient Client) GetRepositories() (repositories []github.Repository, err error) {
-	repositories, _, err = githubClient.Client.Repositories.List("", nil)
+	listOptions := github.ListOptions{PerPage: pageSize}
+	repositoryListOptions := &github.RepositoryListOptions{ListOptions: listOptions}
+	repositories, _, err = githubClient.Client.Repositories.List("", repositoryListOptions)
 	return
 }
 
