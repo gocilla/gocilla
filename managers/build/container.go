@@ -93,7 +93,7 @@ func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 // GitProjectClone clones a GitHub project in the container.
 func (containerBuildManager *ContainerManager) GitProjectClone(containerManager *docker.ContainerManager, event *github.Event) error {
 	commands := []string{
-		fmt.Sprintf("git clone %s .", event.GitURL),
+		fmt.Sprintf("git clone %s .", event.CloneURL),
 	}
 	if event.Type == "pull" {
 		commands = append(commands, fmt.Sprintf("git fetch origin %s:pr/merge", event.SHA))

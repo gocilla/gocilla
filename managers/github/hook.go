@@ -46,7 +46,8 @@ type Event struct {
 	Branch       string
 	Organization string
 	Repository   string
-	GitURL       string
+	CloneURL     string
+	SSHURL       string
 	SHA          string
 	Push         *EventPush
 	Pull         *EventPull
@@ -77,7 +78,8 @@ func ParsePushEvent(r *http.Request) (*Event, error) {
 	event := &Event{
 		Organization: *payload.Repo.Owner.Name,
 		Repository:   *payload.Repo.Name,
-		GitURL:       *payload.Repo.SSHURL,
+		CloneURL:     *payload.Repo.CloneURL,
+		SSHURL:       *payload.Repo.SSHURL,
 		SHA:          *payload.HeadCommit.ID,
 		Push:         &EventPush{},
 	}
@@ -110,7 +112,8 @@ func ParsePullEvent(r *http.Request) (*Event, error) {
 		Branch:       *payload.PullRequest.Base.Ref,
 		Organization: *payload.PullRequest.Head.Repo.Owner.Login,
 		Repository:   *payload.PullRequest.Head.Repo.Name,
-		GitURL:       *payload.PullRequest.Head.Repo.GitURL,
+		CloneURL:     *payload.PullRequest.Head.Repo.CloneURL,
+		SSHURL:       *payload.PullRequest.Head.Repo.SSHURL,
 		SHA:          fmt.Sprintf("pull/%d/head", *payload.Number),
 		Pull:         &EventPull{Number: *payload.Number},
 	}

@@ -1,8 +1,9 @@
 docker:
   file: delivery/docker/Dockerfile
+  workingDir: /go/src/github/gocilla/gocilla
 
 jobs:
-  build: go build
+  build: go get .
 
 pipelines:
   - name: pipeline-pull
@@ -20,7 +21,7 @@ triggers:
     pipeline: pipeline-pull
     envVars:
       ENVIRONMENT: pull
-  
+
   - name: dev
     event: push
     branch: master
