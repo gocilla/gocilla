@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('repositories', ['ngResource', 'uiSwitch'])
+angular.module('organization', ['ngResource', 'uiSwitch'])
 
   .factory('OrganizationsService', ['$resource', '$cacheFactory', function($resource, $cacheFactory) {
     var organizationsCache = $cacheFactory('organizationsCache');
@@ -11,7 +11,7 @@ angular.module('repositories', ['ngResource', 'uiSwitch'])
     return $resource('/api/organizations/:orgId/repositories/:repoId/hook', {orgId: '@orgId', repoId: '@repoId'});
   }])
 
-  .controller('RepositoriesController', ['$scope', '$routeParams', '$cacheFactory',
+  .controller('OrganizationController', ['$scope', '$routeParams', '$cacheFactory',
         'OrganizationsService', 'RepositoryHookService',
         function($scope, $routeParams, $cacheFactory, OrganizationsService, RepositoryHookService) {
     $scope.orgId = $routeParams.orgId;

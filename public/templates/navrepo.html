@@ -1,0 +1,25 @@
+<h3>
+    Information
+</h3>
+
+<h3>
+    Latest builds
+    <span class="octicon octicon-search"></span>
+</h3>
+<a href="/organizations/{{orgId}}/repositories/{{repoId}}/builds/{{build.id}}"
+        ng-repeat="build in builds | limitTo: 3">
+    <div></div>
+    <div>
+        <div>
+            <status status="build.status"></status>
+            {{build.pipeline}}
+        </div>
+        <div><i class="glyphicon glyphicon-hourglass"></i> Duration: {{build.start | duration: build.end}}</div>
+        <div><i class="glyphicon glyphicon-time"></i> Finished: {{build.end | moment: 'fromNow'}}</div>
+    </div>
+</a>
+
+<h3>
+    Manual triggers
+    <span class="octicon octicon-plus"></span>
+</h3>

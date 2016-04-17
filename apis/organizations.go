@@ -16,10 +16,7 @@ package apis
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
 
 	"github.com/gocilla/gocilla/managers/github"
 	"github.com/gocilla/gocilla/managers/mongodb"
@@ -31,14 +28,6 @@ type Organization struct {
 	Name         *string       `json:"name"`
 	AvatarURL    *string       `json:"avatarURL,omitempty"`
 	Repositories []*Repository `json:"repositories,omitempty"`
-}
-
-// Repository type.
-type Repository struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description,omitempty"`
-	GitURL      *string `json:"gitURL,omitempty"`
-	Hooked      bool    `json:"hooked,omitempty"`
 }
 
 // OrganizationsAPI type.
@@ -65,7 +54,7 @@ func (organizationsAPI OrganizationsAPI) GetOrganizations(w http.ResponseWriter,
 	orgsMap := make(map[string]*Organization)
 	// Iterate over the user repositories to build up the "organizations" array
 	for _, repo := range repos {
-		repository := &Repository{repo.Name, repo.Description, repo.GitURL, false}
+		repository := &Repository{Name: repo.Name, Description: repo.Description, GitURL: repo.GitURL, Hooked: false}
 		// Find organization. If not available yet, create it
 		org, ok := orgsMap[*repo.Owner.Login]
 		if !ok {
@@ -96,38 +85,4 @@ func (organizationsAPI OrganizationsAPI) GetOrganizations(w http.ResponseWriter,
 		return
 	}
 	w.Write(jsonOrganizations)
-}
-
-// CreateHook is a resource API to create a GitHub hook on a repository.
-// Organization and repository are specified as parts of the request path.
-func (organizationsAPI OrganizationsAPI) CreateHook(w http.ResponseWriter, r *http.Request) {
-	oauth2Client := organizationsAPI.OAuth2Manager.GetClient(r)
-	githubClient := organizationsAPI.GitHubManager.NewClient(oauth2Client)
-	vars := mux.Vars(r)
-	orgID := vars["orgId"]
-	repoID := vars["repoId"]
-	log.Println("Creating hook for organization", orgID, "and repository", repoID)
-	hookID, err := githubClient.CreateHook(orgID, repoID)
-	if err == nil {
-		accessToken := organizationsAPI.OAuth2Manager.GetSessionAccessToken(r)
-		organizationsAPI.Database.CreateHook(*hookID, orgID, repoID, accessToken)
-	}
-}
-
-// DeleteHook is a resource API to delete  a GitHub hook on a repository.
-// Organization and repository are specified as parts of the request path.
-func (organizationsAPI OrganizationsAPI) DeleteHook(w http.ResponseWriter, r *http.Request) {
-	oauth2Client := organizationsAPI.OAuth2Manager.GetClient(r)
-	githubClient := organizationsAPI.GitHubManager.NewClient(oauth2Client)
-	vars := mux.Vars(r)
-	orgID := vars["orgId"]
-	repoID := vars["repoId"]
-	log.Println("Deleting hook for organization", orgID, "and repository", repoID)
-	hook, err := organizationsAPI.Database.GetHook(orgID, repoID)
-	if err != nil {
-		log.Printf("Error getting hook for organization '%s' and repository '%s'. %s", orgID, repoID, err)
-		return
-	}
-	githubClient.DeleteHook(orgID, repoID, hook.Id)
-	organizationsAPI.Database.DeleteHook(hook.Id)
 }

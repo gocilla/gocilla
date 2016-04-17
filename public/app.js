@@ -1,44 +1,37 @@
 'use strict';
 
-angular.module('gocilla', ['ngResource', 'ngRoute', 'builds', 'profile', 'repositories', 'triggers'])
+angular.module('gocilla', ['ngResource', 'ngRoute', 'profile', 'organization', 'repository'])
 
   .config(function ($routeProvider, $locationProvider) {
     $routeProvider
       .when('/', {
-        templateUrl: 'repositories/repositories.html',
-        controller: 'RepositoriesController'
-      })
-      .when('/builds', {
-        templateUrl: 'builds/builds.html',
-        controller: 'BuildsController'
-      })
-      .when('/builds/:buildId', {
-        templateUrl: 'builds/builds.html',
-        controller: 'BuildsController'
+        templateUrl: '/public/organization/organization.html',
+        controller: 'OrganizationController'
       })
       .when('/organizations', {
-        templateUrl: 'repositories/repositories.html',
-        controller: 'RepositoriesController'
+        templateUrl: '/public/organization/organization.html',
+        controller: 'OrganizationController'
       })
       .when('/organizations/:orgId', {
-        templateUrl: 'repositories/repositories.html',
-        controller: 'RepositoriesController'
+        templateUrl: '/public/organization/organization.html',
+        controller: 'OrganizationController'
+      })
+      .when('/organizations/:orgId/repositories/:repoId', {
+        templateUrl: '/public/repository/repository.html',
+        controller: 'RepositoryController'
+      })
+      .when('/organizations/:orgId/repositories/:repoId/builds/:buildId', {
+        templateUrl: '/public/repository/build.html',
+        controller: 'RepositoryController'
       })
       .when('/organizations/:orgId/repositories/:repoId/hook', {
-        templateUrl: 'repositories/repositories.html',
-        controller: 'RepositoriesController'
-      })
-      .when('/organizations/:orgId/repositories/:repoId/triggers', {
-        templateUrl: 'triggers/triggers.html',
-        controller: 'TriggersController'
-      })
-      .when('/organizations/:orgId/repositories/:repoId/triggers/:triggerId', {
-        templateUrl: 'triggers/triggers.html',
-        controller: 'TriggersController'
+        templateUrl: '/public/organization/organization.html',
+        controller: 'OrganizationController'
       })
       .otherwise({
         redirectTo: '/'
       });
+    $routeProvider.caseInsensitiveMatch = true;
     $locationProvider.html5Mode(true);
   })
   .filter('moment', function () {
@@ -55,10 +48,25 @@ angular.module('gocilla', ['ngResource', 'ngRoute', 'builds', 'profile', 'reposi
       return moment.duration(m1.diff(m2)).humanize();
     };
   })
+  .directive('status', function() {
+    return {
+      restrict: 'E',
+      scope: {
+        status: '='
+      },
+      templateUrl: '/public/templates/status.html'
+    }
+  })
+  .directive('navrepo', function() {
+    return {
+      restrict: 'E',
+      templateUrl: '/public/templates/navrepo.html'
+    }
+  })
   .directive('navigation', function() {
     return {
       restrict: 'AE',
       replace: 'true',
-      templateUrl: 'templates/navigation.html'
+      templateUrl: '/public/templates/navigation.html'
     }
   });

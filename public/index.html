@@ -2,11 +2,12 @@
 <html ng-app="gocilla">
 
 <head>
-    <base href='/'>
+    <base href="/">
+    <title>gocilla</title>
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/3.3.0/octicons.css">
-    <link rel="stylesheet" href="css/angular-ui-switch.min.css">
-    <link rel="stylesheet" href="css/gocilla.css">
+    <link rel="stylesheet" href="/public/css/angular-ui-switch.min.css">
+    <link rel="stylesheet" href="/public/css/gocilla.css">
 </head>
 
 <body>
@@ -17,23 +18,24 @@
 
 <div ng-view></div>
 
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-resource.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-route.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-resource.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.3/ui-bootstrap.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.3/ui-bootstrap-tpls.min.js"></script>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script src="js/angular-ui-switch.min.js"></script>
+<script src="/public/js/angular-ui-switch.min.js"></script>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
 
-<script src="profile/profile.js"></script>
-<script src="repositories/repositories.js"></script>
-<script src="triggers/triggers.js"></script>
-<script src="builds/builds.js"></script>
-<script src="app.js"></script>
+<script src="/public/profile/profile.js"></script>
+<script src="/public/organization/organization.js"></script>
+<script src="/public/repository/repository.js"></script>
+<script src="/public/triggers/triggers.js"></script>
+<script src="/public/builds/builds.js"></script>
+<script src="/public/app.js"></script>
 
 </body>
 

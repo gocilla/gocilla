@@ -62,6 +62,14 @@ func (database *Database) FindBuilds() ([]Build, error) {
 	return builds, err
 }
 
+// FindRepositoryBuilds to list the latest 50 builds of a repository.
+func (database *Database) FindRepositoryBuilds(organization, repository string) ([]Build, error) {
+	collection := database.Session.DB("").C("builds")
+	var builds []Build
+	err := collection.Find(bson.M{"organization": organization, "repository": repository}).Sort("-start").Limit(50).All(&builds)
+	return builds, err
+}
+
 // UpdateBuild to update the status of a build.
 func (database *Database) UpdateBuild(id bson.ObjectId, status, error string, end time.Time) error {
 	collection := database.Session.DB("").C("builds")

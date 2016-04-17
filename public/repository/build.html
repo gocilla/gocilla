@@ -1,0 +1,58 @@
+<div class="gocilla-view">
+    <div class="gocilla-container">
+
+        <navrepo class="gocilla-navigator"></navrepo>
+
+        <div class="gocilla-content" ng-repeat="build in builds | filter: {id: buildId} | limitTo: 1">
+            <h2>Repository: {{orgId}}/{{repoId}}</h2>
+
+            <h3>Build {{build.id}}</h3>
+            <div class="repository">
+                <div>Pipeline:</div>
+                <div>{{build.pipeline}}</div>
+            </div>
+            <div class="repository">
+                <div>Trigger:</div>
+                <div>{{build.event}} to {{build.branch}}</div>
+            </div>
+            <div class="repository">
+                <div>Duration:</div>
+                <div>{{build.start | duration: build.end}}</div>
+            </div>
+            <div class="repository">
+                <div>Finished:</div>
+                <div>{{build.end | moment: 'fromNow'}}</div>
+            </div>
+            <div class="repository">
+                <div>Status:</div>
+                <div><status status="build.status"></status></div>
+            </div>
+
+            <h3>Tasks</h3>
+            <div class="repository" ng-repeat="task in build.tasks">
+                <div>Id</div>
+                <div>Task</div>
+                <div>Status</div>
+                <div>Duration</div>
+                <div>Command</div>
+            </div>
+            <div class="repository" ng-repeat="task in build.tasks">
+                <div>{{$index + 1}}</div>
+                <div>{{task.name}}</div>
+                <div><status status="task.status"></status></div>
+                <div>{{task.start | duration: task.end}}</div>
+                <div>{{task.command}}</div>
+            </div>
+
+            <h3>Environment variables</h3>
+            <div class="repository" ng-repeat="(key, value) in build.envVars">
+                <div>{{key}}:</div>
+                <div>{{value}}</div>
+            </div>
+
+            <h3>Logs</h3>
+
+        </div>
+
+    </div>
+</div>

@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Mongo
-	database, err := mongodb.NewDatabase(config.Mongodb)
+	database, _ := mongodb.NewDatabase(config.Mongodb)
 	defer database.Close()
 
 	// Managers
@@ -64,6 +64,7 @@ func main() {
 	buildsAPI := apis.NewBuildsAPI(database)
 	eventsAPI := apis.NewEventsAPI(buildManager)
 	organizationsAPI := apis.NewOrganizationsAPI(database, oauth2Manager, githubManager)
+	repositoryAPI := apis.NewRepositoryAPI(database, oauth2Manager, githubManager)
 	triggersAPI := apis.NewTriggersAPI(database)
 	usersAPI := apis.NewUsersAPI(oauth2Manager, githubManager)
 
@@ -75,14 +76,20 @@ func main() {
 	r.HandleFunc("/api/builds", buildsAPI.GetBuilds).Methods("GET")
 	r.HandleFunc("/api/events", eventsAPI.LaunchBuild).Methods("POST")
 	r.HandleFunc("/api/organizations", authenticate(organizationsAPI.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds",
+		authenticate(repositoryAPI.GetBuilds)).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(organizationsAPI.CreateHook)).Methods("POST")
+		authenticate(repositoryAPI.CreateHook)).Methods("POST")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(organizationsAPI.DeleteHook)).Methods("DELETE")
+		authenticate(repositoryAPI.DeleteHook)).Methods("DELETE")
 	r.HandleFunc("/api/profile", middlewares.LoggingHandler(authenticate(usersAPI.GetProfile))).Methods("GET")
 	r.HandleFunc("/api/triggers", triggersAPI.GetTriggers).Methods("GET")
 	r.HandleFunc("/api/triggers", triggersAPI.CreateTrigger).Methods("POST")
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
+	// Static content
+	r.PathPrefix("/public").Handler(http.FileServer(http.Dir("./")))
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./public/index.html")
+	})
 	http.Handle("/", r)
 	log.Println("Listening at", config.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
