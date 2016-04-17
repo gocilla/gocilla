@@ -56,7 +56,7 @@ body {
 .gocilla-navigator > a > div:first-child {
 	border-left-style: solid;
 	border-left-width: 4px;
-	border-left-color: white;
+	border-left-color: transparent;
 }
 
 .gocilla-navigator > a:hover > div:first-child {
