@@ -59,6 +59,7 @@ func main() {
 
 	// Middlewares
 	authenticate := middlewares.Authenticate(sessionManager)
+	logging := middlewares.LoggingHandler
 
 	// Apis
 	buildsAPI := apis.NewBuildsAPI(database)
@@ -70,21 +71,21 @@ func main() {
 
 	// Routing
 	r := mux.NewRouter()
-	r.HandleFunc("/login", oauth2Manager.Authorize).Methods("GET")
-	r.HandleFunc("/login/callback", oauth2Manager.AuthorizeCallback).Methods("GET")
-	r.HandleFunc("/logout", oauth2Manager.Logout).Methods("GET")
-	r.HandleFunc("/api/builds", buildsAPI.GetBuilds).Methods("GET")
-	r.HandleFunc("/api/events", eventsAPI.LaunchBuild).Methods("POST")
-	r.HandleFunc("/api/organizations", authenticate(organizationsAPI.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/login", logging(oauth2Manager.Authorize)).Methods("GET")
+	r.HandleFunc("/login/callback", logging(oauth2Manager.AuthorizeCallback)).Methods("GET")
+	r.HandleFunc("/logout", logging(oauth2Manager.Logout)).Methods("GET")
+	r.HandleFunc("/api/builds", logging(buildsAPI.GetBuilds)).Methods("GET")
+	r.HandleFunc("/api/events", logging(eventsAPI.LaunchBuild)).Methods("POST")
+	r.HandleFunc("/api/organizations", logging(authenticate(organizationsAPI.GetOrganizations))).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds",
-		authenticate(repositoryAPI.GetBuilds)).Methods("GET")
+		logging(authenticate(repositoryAPI.GetBuilds))).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(repositoryAPI.CreateHook)).Methods("POST")
+		logging(authenticate(repositoryAPI.CreateHook))).Methods("POST")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
-		authenticate(repositoryAPI.DeleteHook)).Methods("DELETE")
-	r.HandleFunc("/api/profile", middlewares.LoggingHandler(authenticate(usersAPI.GetProfile))).Methods("GET")
-	r.HandleFunc("/api/triggers", triggersAPI.GetTriggers).Methods("GET")
-	r.HandleFunc("/api/triggers", triggersAPI.CreateTrigger).Methods("POST")
+		logging(authenticate(repositoryAPI.DeleteHook))).Methods("DELETE")
+	r.HandleFunc("/api/profile", logging(authenticate(usersAPI.GetProfile))).Methods("GET")
+	r.HandleFunc("/api/triggers", logging(triggersAPI.GetTriggers)).Methods("GET")
+	r.HandleFunc("/api/triggers", logging(triggersAPI.CreateTrigger)).Methods("POST")
 	// Static content
 	r.PathPrefix("/public").Handler(http.FileServer(http.Dir("./")))
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
