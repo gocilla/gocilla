@@ -34,59 +34,44 @@ type ContainerManager struct {
 	trigger       *TriggerSpec
 	event         *github.Event
 	dockerSHA     string
+	buildWriter   *mongodb.BuildWriter
 	buildLog      io.Writer
 }
 
 // NewContainerManager is the constructor for ContainerManager.
 func NewContainerManager(database *mongodb.Database, dockerManager *docker.Manager, buildSpec *Spec,
-	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string, buildLog io.Writer) *ContainerManager {
-	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildLog}
+	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string,
+	buildWriter *mongodb.BuildWriter, buildLog io.Writer) *ContainerManager {
+	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildWriter, buildLog}
 }
 
 // ExecutePipeline executes the pipeline corresponding to the build triggered.
 func (containerBuildManager *ContainerManager) ExecutePipeline() error {
 	event := containerBuildManager.event
 	dockerSHA := containerBuildManager.dockerSHA
-
-	buildWriter, err := mongodb.NewBuildWriter(
-		containerBuildManager.database,
-		containerBuildManager.event.Organization,
-		containerBuildManager.event.Repository,
-		containerBuildManager.event.Type,
-		containerBuildManager.event.Branch,
-		containerBuildManager.trigger.Pipeline,
-		containerBuildManager.trigger.EnvVars)
-	if err != nil {
-		log.Println("Error creating build writer:", err)
-		return err
-	}
-
 	user := containerBuildManager.buildSpec.Docker.User
 	workingDir := containerBuildManager.buildSpec.Docker.WorkingDir
-	log.Println("En CreateAndStartContainer")
 	containerManager, err := containerBuildManager.dockerManager.CreateAndStartContainer(
 		event.Organization, event.Repository, dockerSHA, user, workingDir,
 		containerBuildManager.trigger.EnvVars)
 	if err != nil {
 		log.Println("Error creating and starting the container:", err)
-		buildWriter.EndBuild("error", "Error creating and starting the container")
+		containerBuildManager.buildWriter.EndBuild("error", "Error creating and starting the container")
 		return err
 	}
 	defer containerManager.RemoveContainer()
 
-	log.Println("En GitProjectClone")
 	if err := containerBuildManager.GitProjectClone(containerManager, event); err != nil {
-		buildWriter.EndBuild("error", "Error cloning the project")
+		containerBuildManager.buildWriter.EndBuild("error", "Error cloning the project")
 		return err
 	}
 
-	log.Println("En ExecutePipelineJobs")
-	if err := containerBuildManager.ExecutePipelineJobs(containerManager, buildWriter); err != nil {
-		buildWriter.EndBuild("error", "Error executing the pipeline")
+	if err := containerBuildManager.ExecutePipelineJobs(containerManager); err != nil {
+		containerBuildManager.buildWriter.EndBuild("error", "Error executing the pipeline")
 		return err
 	}
 	log.Printf("Completed successfully execution of pipeline '%s'", containerBuildManager.pipeline.Name)
-	buildWriter.EndBuild("success", "")
+	containerBuildManager.buildWriter.EndBuild("success", "")
 	return nil
 }
 
@@ -113,18 +98,18 @@ func (containerBuildManager *ContainerManager) GitProjectClone(containerManager 
 }
 
 // ExecutePipelineJobs executes the list of jobs of the pipeline.
-func (containerBuildManager *ContainerManager) ExecutePipelineJobs(containerManager *docker.ContainerManager, buildWriter *mongodb.BuildWriter) error {
+func (containerBuildManager *ContainerManager) ExecutePipelineJobs(containerManager *docker.ContainerManager) error {
 	for _, job := range containerBuildManager.pipeline.Jobs {
 		command := containerBuildManager.buildSpec.Jobs[job]
-		buildWriter.StartBuildTask(job, command)
+		containerBuildManager.buildWriter.StartBuildTask(job, command)
 		log.Printf("Executing job '%s' with command: %s", job, command)
 		err := containerManager.ExecContainer(command, containerBuildManager.buildLog)
 		if err != nil {
 			log.Println("Error executing command", err)
-			buildWriter.EndBuildTask("error", "Error executing command")
+			containerBuildManager.buildWriter.EndBuildTask("error", "Error executing command")
 			return err
 		}
-		buildWriter.EndBuildTask("success", "")
+		containerBuildManager.buildWriter.EndBuildTask("success", "")
 	}
 	return nil
 }

@@ -62,10 +62,10 @@ func main() {
 	logging := middlewares.LoggingHandler
 
 	// Apis
-	buildsAPI := apis.NewBuildsAPI(database)
 	eventsAPI := apis.NewEventsAPI(buildManager)
 	organizationsAPI := apis.NewOrganizationsAPI(database, oauth2Manager, githubManager)
 	repositoryAPI := apis.NewRepositoryAPI(database, oauth2Manager, githubManager)
+	buildAPI := apis.NewBuildAPI(database)
 	triggersAPI := apis.NewTriggersAPI(database)
 	usersAPI := apis.NewUsersAPI(oauth2Manager, githubManager)
 
@@ -74,11 +74,12 @@ func main() {
 	r.HandleFunc("/login", logging(oauth2Manager.Authorize)).Methods("GET")
 	r.HandleFunc("/login/callback", logging(oauth2Manager.AuthorizeCallback)).Methods("GET")
 	r.HandleFunc("/logout", logging(oauth2Manager.Logout)).Methods("GET")
-	r.HandleFunc("/api/builds", logging(buildsAPI.GetBuilds)).Methods("GET")
 	r.HandleFunc("/api/events", logging(eventsAPI.LaunchBuild)).Methods("POST")
 	r.HandleFunc("/api/organizations", logging(authenticate(organizationsAPI.GetOrganizations))).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds",
 		logging(authenticate(repositoryAPI.GetBuilds))).Methods("GET")
+	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds/{buildId}/logs",
+		logging(authenticate(buildAPI.GetLog))).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",
 		logging(authenticate(repositoryAPI.CreateHook))).Methods("POST")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/hook",

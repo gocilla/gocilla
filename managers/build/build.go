@@ -106,8 +106,20 @@ func (buildManager *Manager) Build(event *github.Event) error {
 	}
 	log.Printf("Pipeline to be executed: %s", trigger.Pipeline)
 
+	// Create the build writer in mongodb (with info about the executed steps)
+	buildWriter, err := mongodb.NewBuildWriter(
+		buildManager.Database,
+		event.Organization, event.Repository, event.Type, event.Branch,
+		trigger.Pipeline, trigger.EnvVars)
+	if err != nil {
+		log.Println("Error creating build writer:", err)
+		return err
+	}
+	buildID := buildWriter.Build.ID.Hex()
+	log.Printf("Build ID: %s", buildID)
+
 	// Write logs to a mongodb gridfs file and to console
-	buildLogFile := fmt.Sprintf("/%s/%s/%s", event.Organization, event.Repository, event.SHA)
+	buildLogFile := fmt.Sprintf("/%s/%s/%s", event.Organization, event.Repository, buildID)
 	buildMongoLog, err := buildManager.Database.CreateFile(buildLogFile)
 	if err != nil {
 		return fmt.Errorf("Error creating build mongo log file: %s. %s", buildLogFile, err)
@@ -120,7 +132,7 @@ func (buildManager *Manager) Build(event *github.Event) error {
 		return fmt.Errorf("Error preparing the docker image. %s", err)
 	}
 
-	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildLog)
+	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildWriter, buildLog)
 	if err := containerManager.ExecutePipeline(); err != nil {
 		return fmt.Errorf("Error executing the pipeline. %s", err)
 	}
