@@ -76,6 +76,10 @@ func main() {
 	r.HandleFunc("/logout", logging(oauth2Manager.Logout)).Methods("GET")
 	r.HandleFunc("/api/events", logging(eventsAPI.LaunchBuild)).Methods("POST")
 	r.HandleFunc("/api/organizations", logging(authenticate(organizationsAPI.GetOrganizations))).Methods("GET")
+	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}",
+		logging(authenticate(repositoryAPI.GetRepository))).Methods("GET")
+	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}",
+		logging(authenticate(repositoryAPI.UpdateRepository))).Methods("POST")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds",
 		logging(authenticate(repositoryAPI.GetBuilds))).Methods("GET")
 	r.HandleFunc("/api/organizations/{orgId}/repositories/{repoId}/builds/{buildId}/logs",

@@ -48,6 +48,51 @@ func NewRepositoryAPI(database *mongodb.Database, oauth2Manager *oauth2.Manager,
 	return &RepositoryAPI{database, oauth2Manager, githubManager}
 }
 
+// GetRepository is the API resource that returns the settings of the repository.
+func (repositoryAPI RepositoryAPI) GetRepository(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orgID := vars["orgId"]
+	repoID := vars["repoId"]
+	log.Printf("Getting settings for repository: %s/%s", orgID, repoID)
+
+	repository, err := repositoryAPI.Database.GetRepository(orgID, repoID)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("Error getting repository from database"))
+		return
+	}
+
+	jsonRepository, err := json.Marshal(repository)
+	if err != nil {
+		w.Write([]byte("Error marshalling the repository"))
+		return
+	}
+	w.Write(jsonRepository)
+}
+
+// UpdateRepository is the API resource that updates the settings of the repository.
+func (repositoryAPI RepositoryAPI) UpdateRepository(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orgID := vars["orgId"]
+	repoID := vars["repoId"]
+	log.Printf("Updating settings for repository: %s/%s", orgID, repoID)
+
+	var repository mongodb.Repository
+	if err := json.NewDecoder(r.Body).Decode(&repository); err != nil {
+		log.Println(err)
+		w.WriteHeader(500)
+		w.Write([]byte("Error decoding JSON repository"))
+		return
+	}
+	if err := repositoryAPI.Database.UpdateRepository(&repository); err != nil {
+		log.Println(err)
+		w.WriteHeader(500)
+		w.Write([]byte("Error updating the repository"))
+		return
+	}
+	w.WriteHeader(200)
+}
+
 // GetBuilds is the API resource that returns the builds of the repository.
 func (repositoryAPI RepositoryAPI) GetBuilds(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -100,6 +145,6 @@ func (repositoryAPI RepositoryAPI) DeleteHook(w http.ResponseWriter, r *http.Req
 		log.Printf("Error getting hook for organization '%s' and repository '%s'. %s", orgID, repoID, err)
 		return
 	}
-	githubClient.DeleteHook(orgID, repoID, hook.Id)
-	repositoryAPI.Database.DeleteHook(hook.Id)
+	githubClient.DeleteHook(orgID, repoID, hook.ID)
+	repositoryAPI.Database.DeleteHook(hook.ID)
 }

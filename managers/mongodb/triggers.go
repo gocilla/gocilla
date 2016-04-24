@@ -31,11 +31,13 @@ type Trigger struct {
 	EnvVars      []PipelineEnvVar `bson:"envVars" json:"envVars"`
 }
 
+/*
 // PipelineEnvVar type.
 type PipelineEnvVar struct {
 	Name  string `bson:"name" json:"name"`
 	Value string `bson:"value" json:"value"`
 }
+*/
 
 // FindTriggers to retrieve the triggers for a repository.
 func (database *Database) FindTriggers(organization, repository string) []Trigger {

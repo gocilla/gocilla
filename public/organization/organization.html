@@ -19,9 +19,11 @@
                 <div class="switch-repo">
                     <switch name="enabled" ng-model="repo.hooked" class="green" ng-change="switchRepo(repo)"></switch>
                 </div>
-                <a href="/organizations/{{organization.name}}/repositories/{{repo.name}}">
-                    <i class="glyphicon glyphicon-cog repo-settings"></i>
-                </a>
+                <div>
+                    <a href="/organizations/{{organization.name}}/repositories/{{repo.name}}">
+                        <i class="glyphicon glyphicon-cog repo-settings"></i>
+                    </a>
+                </div>
                 <div>
                     <div><strong>{{organization.name}}/{{repo.name}}</strong></div>
                     <div>{{repo.description}}</div>

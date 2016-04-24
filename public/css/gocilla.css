@@ -78,22 +78,20 @@ body {
 .gocilla-content > .gocilla-content-row {
 	display: table-row;
 	width: 100%;
-	padding: 10px 0px;
 }
 
-.gocilla-content > .gocilla-content-row > * {
+.gocilla-content > .gocilla-content-row > div {
 	display: table-cell;
-	padding: 0px 10px;
+	padding-top: 10px;
+	padding-left: 10px;
 	vertical-align: middle;
 }
 
 .gocilla-content > .gocilla-content-row > .switch-repo {
-	padding-top: 7px;
 }
 
-.gocilla-content > .gocilla-content-row > * > .repo-settings {
+.repo-settings {
 	font-size: 30px;
-	padding-top: 4px;
 }
 
 pre.logs {

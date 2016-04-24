@@ -20,9 +20,13 @@ angular.module('gocilla', ['ngResource', 'ngRoute', 'profile', 'organization', '
         templateUrl: '/public/repository/repository.html',
         controller: 'RepositoryController'
       })
+      .when('/organizations/:orgId/repositories/:repoId/settings', {
+        templateUrl: '/public/repository/settings.html',
+        controller: 'RepositorySettingsController'
+      })
       .when('/organizations/:orgId/repositories/:repoId/builds/:buildId', {
         templateUrl: '/public/repository/build.html',
-        controller: 'RepositoryController'
+        controller: 'RepositoryBuildController'
       })
       .when('/organizations/:orgId/repositories/:repoId/hook', {
         templateUrl: '/public/organization/organization.html',

@@ -22,7 +22,7 @@ import (
 
 // Hook type.
 type Hook struct {
-	Id           int    `bson:"_id"`
+	ID           int    `bson:"_id"`
 	Organization string `bson:"organization"`
 	Repository   string `bson:"repository"`
 	AccessToken  string `bson:"accessToken"`
