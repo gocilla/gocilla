@@ -15,7 +15,7 @@
 
         <div class="gocilla-content" ng-repeat="organization in organizations | filter: {name: orgId} | limitTo: 1">
             <h2>Organization: <strong>{{organization.name}}</strong></h2>
-            <div class="repository" ng-repeat="repo in organization.repositories">
+            <div class="gocilla-content-row" ng-repeat="repo in organization.repositories">
                 <div class="switch-repo">
                     <switch name="enabled" ng-model="repo.hooked" class="green" ng-change="switchRepo(repo)"></switch>
                 </div>

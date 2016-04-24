@@ -7,51 +7,51 @@
             <h2>Repository: {{orgId}}/{{repoId}}</h2>
 
             <h3>Build {{build.id}}</h3>
-            <div class="repository">
-                <div>Pipeline:</div>
+            <div class="gocilla-content-row">
+                <div><strong>Pipeline:</strong></div>
                 <div>{{build.pipeline}}</div>
             </div>
-            <div class="repository">
-                <div>Trigger:</div>
+            <div class="gocilla-content-row">
+                <div><strong>Trigger:</strong></div>
                 <div>{{build.event}} to {{build.branch}}</div>
             </div>
-            <div class="repository">
-                <div>Duration:</div>
+            <div class="gocilla-content-row">
+                <div><strong>Duration:</strong></div>
                 <div>{{build.start | duration: build.end}}</div>
             </div>
-            <div class="repository">
-                <div>Finished:</div>
+            <div class="gocilla-content-row">
+                <div><strong>Finished:</strong></div>
                 <div>{{build.end | moment: 'fromNow'}}</div>
             </div>
-            <div class="repository">
-                <div>Status:</div>
+            <div class="gocilla-content-row">
+                <div><strong>Status:</strong></div>
                 <div><status status="build.status"></status></div>
             </div>
 
             <h3>Tasks</h3>
-            <div class="repository" ng-repeat="task in build.tasks">
-                <div>Id</div>
-                <div>Task</div>
-                <div>Status</div>
-                <div>Duration</div>
-                <div>Command</div>
+            <div class="gocilla-content-row" ng-repeat="task in build.tasks">
+                <div><strong>Id</strong></div>
+                <div><strong>Task</strong></div>
+                <div><strong>Status</strong></div>
+                <div><strong>Duration</strong></div>
+                <div><strong>Command</strong></div>
             </div>
-            <div class="repository" ng-repeat="task in build.tasks">
+            <div class="gocilla-content-row" ng-repeat="task in build.tasks">
                 <div>{{$index + 1}}</div>
                 <div>{{task.name}}</div>
-                <div><status status="task.status"></status></div>
+                <div><center><status status="task.status"></status></center></div>
                 <div>{{task.start | duration: task.end}}</div>
                 <div>{{task.command}}</div>
             </div>
 
-            <h3>Environment variables</h3>
-            <div class="repository" ng-repeat="(key, value) in build.envVars">
+            <h3 ng-if="build.envVars && build.envVars.length">Environment variables</h3>
+            <div class="gocilla-content-row" ng-repeat="(key, value) in build.envVars">
                 <div>{{key}}:</div>
                 <div>{{value}}</div>
             </div>
 
             <h3>Logs</h3>
-            <pre>{{buildLogs}}</pre>
+            <pre class="logs"></span>{{buildLogs}}</pre>
 
         </div>
 
