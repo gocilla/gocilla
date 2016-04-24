@@ -4,9 +4,18 @@
         <navrepo class="gocilla-navigator"></navrepo>
 
         <div class="gocilla-content" ng-repeat="build in builds | filter: {id: buildId} | limitTo: 1">
-            <h2>Repository: {{orgId}}/{{repoId}}</h2>
+            <h2>
+                Build
+                <ol class="breadcrumb">
+                  <li><a href="/organizations/{{orgId}}">{{orgId}}</a></li>
+                  <li><a href="/organizations/{{orgId}}/repositories/{{repoId}}" class="active">{{repoId}}</a></li>
+                </ol>
+            </h2>
 
-            <h3>Build {{build.id}}</h3>
+            <div class="gocilla-content-row">
+                <div><strong>ID:</strong></div>
+                <div>{{build.id}}</div>
+            </div>
             <div class="gocilla-content-row">
                 <div><strong>Pipeline:</strong></div>
                 <div>{{build.pipeline}}</div>

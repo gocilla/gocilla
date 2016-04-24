@@ -4,7 +4,13 @@
         <navrepo class="gocilla-navigator"></navrepo>
 
         <div class="gocilla-content">
-            <h2>Repository: {{orgId}}/{{repoId}}</h2>
+            <h2>
+                Dashboard
+                <ol class="breadcrumb">
+                  <li><a href="/organizations/{{orgId}}">{{orgId}}</a></li>
+                  <li><a href="/organizations/{{orgId}}/repositories/{{repoId}}" class="active">{{repoId}}</a></li>
+                </ol>
+            </h2>
         </div>
 
     </div>

@@ -75,6 +75,11 @@ body {
 	border-bottom: solid 1px #EFF0EC;
 }
 
+.gocilla-content > h2 > .breadcrumb {
+	font-size: small;
+	float: right;
+}
+
 .gocilla-content > .gocilla-content-row {
 	display: table-row;
 	width: 100%;
