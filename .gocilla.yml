@@ -3,16 +3,24 @@ docker:
   workingDir: /go/src/github/gocilla/gocilla
 
 jobs:
+  date: date
   build: go get .
+  test_acceptance: echo "Simulating the acceptance tests"
 
 pipelines:
   - name: pipeline-pull
     jobs:
+      - date
       - build
+      - test_acceptance
+      - date
 
   - name: pipeline-dev
     jobs:
+      - date
       - build
+      - test_acceptance
+      - date
 
 triggers:
   - name: pull

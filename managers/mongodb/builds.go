@@ -39,12 +39,12 @@ type Build struct {
 
 // BuildTask type.
 type BuildTask struct {
-	Name    string    `bson:"name" json:"name"`
-	Command string    `bson:"command" json:"command"`
-	Status  string    `bson:"status" json:"status"`
-	Error   string    `bson:"error,omitempty" json:"error,omitempty"`
-	Start   time.Time `bson:"start" json:"start"`
-	End     time.Time `bson:"end,omitempty" json:"end,omitempty"`
+	Name    string     `bson:"name" json:"name"`
+	Command string     `bson:"command" json:"command"`
+	Status  string     `bson:"status" json:"status"`
+	Error   string     `bson:"error,omitempty" json:"error,omitempty"`
+	Start   *time.Time `bson:"start" json:"start"`
+	End     *time.Time `bson:"end,omitempty" json:"end,omitempty"`
 }
 
 // CreateBuild to insert a new build.
@@ -130,11 +130,12 @@ func NewBuildWriter(database *Database, organization, repository, event, branch,
 
 // StartBuildTask to insert a task, with "running" status, in a build.
 func (buildWriter *BuildWriter) StartBuildTask(name, command string) error {
+	now := time.Now()
 	buildTask := &BuildTask{
 		Name:    name,
 		Command: command,
 		Status:  "running",
-		Start:   time.Now(),
+		Start:   &now,
 	}
 	return buildWriter.Database.AddBuildTask(buildWriter.Build.ID, buildTask)
 }

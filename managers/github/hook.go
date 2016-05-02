@@ -24,6 +24,15 @@ import (
 	"github.com/google/go-github/github"
 )
 
+const (
+	// EventTypePull is a contant for Pull Request event type
+	EventTypePull string = "pull"
+	// EventTypePush is a contant for Push event type
+	EventTypePush string = "push"
+	// EventTypeTag is a contant for Tag event type
+	EventTypeTag string = "tag"
+)
+
 // ExtendedWebHookPayload type.
 type ExtendedWebHookPayload struct {
 	BaseRef *string        `json:"base_ref,omitempty"`
@@ -55,7 +64,8 @@ type Event struct {
 
 // EventPull type.
 type EventPull struct {
-	Number int
+	Number  int
+	HeadSHA string
 }
 
 // EventPush type.
@@ -84,12 +94,12 @@ func ParsePushEvent(r *http.Request) (*Event, error) {
 		Push:         &EventPush{},
 	}
 	if strings.HasPrefix(*payload.Ref, "refs/tags/") {
-		event.Type = "tag"
+		event.Type = EventTypeTag
 		if payload.BaseRef != nil {
 			event.Branch = (*payload.BaseRef)[len("refs/heads/"):]
 		}
 	} else {
-		event.Type = "push"
+		event.Type = EventTypePush
 		event.Branch = (*payload.Ref)[len("refs/heads/"):]
 	}
 	return event, nil
@@ -108,14 +118,14 @@ func ParsePullEvent(r *http.Request) (*Event, error) {
 	}
 
 	event := &Event{
-		Type:         "pull",
+		Type:         EventTypePull,
 		Branch:       *payload.PullRequest.Base.Ref,
 		Organization: *payload.PullRequest.Head.Repo.Owner.Login,
 		Repository:   *payload.PullRequest.Head.Repo.Name,
 		CloneURL:     *payload.PullRequest.Head.Repo.CloneURL,
 		SSHURL:       *payload.PullRequest.Head.Repo.SSHURL,
 		SHA:          fmt.Sprintf("pull/%d/head", *payload.Number),
-		Pull:         &EventPull{Number: *payload.Number},
+		Pull:         &EventPull{Number: *payload.Number, HeadSHA: *payload.PullRequest.Head.SHA},
 	}
 	return event, nil
 }

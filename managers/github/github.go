@@ -108,6 +108,17 @@ func (githubClient Client) DeleteHook(owner, repo string, hookID int) error {
 	return nil
 }
 
+// CreateStatus creates a new status for a repository at the specified reference.
+// The reference can be a SHA, a branch name, or a tag name.
+func (githubClient Client) CreateStatus(owner, repo, ref, context, description, state string) error {
+	status := &github.RepoStatus{Context: &context, Description: &description, State: &state}
+	_, _, err := githubClient.Client.Repositories.CreateStatus(owner, repo, ref, status)
+	if err != nil {
+		log.Printf("Error creating status. %s", err)
+	}
+	return err
+}
+
 // GetFileContent to download a file from a user's repository.
 func (githubClient Client) GetFileContent(owner, repo, path, ref string) ([]byte, error) {
 	options := &github.RepositoryContentGetOptions{Ref: ref}

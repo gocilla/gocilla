@@ -39,10 +39,10 @@ func main() {
 	if configPath == "" {
 		configPath = "config.json"
 	}
-	log.Println("Configuration path:", configPath)
+	log.Printf("Configuration path: %s", configPath)
 	config, err := config.Decode(configPath)
 	if err != nil {
-		log.Println("Configuration error:", err)
+		log.Printf("Configuration error: %s", err)
 		return
 	}
 
@@ -97,6 +97,6 @@ func main() {
 		http.ServeFile(w, r, "./public/index.html")
 	})
 	http.Handle("/", r)
-	log.Println("Listening at", config.Port)
+	log.Printf("Listening at %d", config.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 }

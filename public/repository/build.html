@@ -38,7 +38,7 @@
             </div>
 
             <h3>Tasks</h3>
-            <div class="gocilla-content-row" ng-repeat="task in build.tasks">
+            <div class="gocilla-content-row">
                 <div><strong>Id</strong></div>
                 <div><strong>Task</strong></div>
                 <div><strong>Status</strong></div>
@@ -53,9 +53,9 @@
                 <div>{{task.command}}</div>
             </div>
 
-            <h3 ng-if="build.envVars && build.envVars.length">Environment variables</h3>
+            <h3 ng-show="build.envVars">Environment variables</h3>
             <div class="gocilla-content-row" ng-repeat="(key, value) in build.envVars">
-                <div>{{key}}:</div>
+                <div><strong>{{key}}:</strong></div>
                 <div>{{value}}</div>
             </div>
 

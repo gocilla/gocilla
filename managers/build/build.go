@@ -16,7 +16,6 @@ package build
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,7 +67,7 @@ type TriggerSpec struct {
 	Event    string
 	Branch   string
 	Pipeline string
-	EnvVars  map[string]string
+	EnvVars  map[string]string `json:"envVars" yaml:"envVars"`
 }
 
 // NewManager is the constructor of Manager.
@@ -106,33 +105,27 @@ func (buildManager *Manager) Build(event *github.Event) error {
 	}
 	log.Printf("Pipeline to be executed: %s", trigger.Pipeline)
 
-	// Create the build writer in mongodb (with info about the executed steps)
-	buildWriter, err := mongodb.NewBuildWriter(
-		buildManager.Database,
-		event.Organization, event.Repository, event.Type, event.Branch,
-		trigger.Pipeline, trigger.EnvVars)
+	buildRegister, err := NewRegister(buildManager.Database, githubClient, event, trigger)
 	if err != nil {
-		log.Println("Error creating build writer:", err)
+		log.Println("Error creating build register:", err)
 		return err
 	}
-	buildID := buildWriter.Build.ID.Hex()
-	log.Printf("Build ID: %s", buildID)
 
-	// Write logs to a mongodb gridfs file and to console
-	buildLogFile := fmt.Sprintf("/%s/%s/%s", event.Organization, event.Repository, buildID)
-	buildMongoLog, err := buildManager.Database.CreateFile(buildLogFile)
-	if err != nil {
-		return fmt.Errorf("Error creating build mongo log file: %s. %s", buildLogFile, err)
-	}
-	buildLog := io.MultiWriter(buildMongoLog, os.Stdout)
-	defer buildMongoLog.Close()
-
-	dockerManager, dockerSHA, err := buildManager.PrepareDockerImage(githubClient, event, buildSpec, buildLog)
+	dockerManager, dockerSHA, err := buildManager.PrepareDockerImage(githubClient, event, buildSpec, buildRegister)
 	if err != nil {
 		return fmt.Errorf("Error preparing the docker image. %s", err)
 	}
 
-	containerManager := NewContainerManager(buildManager.Database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildWriter, buildLog)
+	containerManager := &ContainerManager{
+		database:      buildManager.Database,
+		dockerManager: dockerManager,
+		buildSpec:     buildSpec,
+		pipeline:      pipeline,
+		trigger:       trigger,
+		event:         event,
+		dockerSHA:     dockerSHA,
+		buildRegister: buildRegister,
+	}
 	if err := containerManager.ExecutePipeline(); err != nil {
 		return fmt.Errorf("Error executing the pipeline. %s", err)
 	}
@@ -146,6 +139,7 @@ func (buildManager *Manager) GetSpec(githubClient *github.Client, event *github.
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Spec for SHA %s: %s", event.SHA, content)
 	var buildSpec Spec
 	err = yaml.Unmarshal(content, &buildSpec)
 	return &buildSpec, err
@@ -172,7 +166,7 @@ func (buildManager *Manager) GetPipeline(buildSpec *Spec, triggerSpec *TriggerSp
 }
 
 // PrepareDockerImage to set up the docker image.
-func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, event *github.Event, buildSpec *Spec, buildLog io.Writer) (*docker.Manager, string, error) {
+func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, event *github.Event, buildSpec *Spec, buildRegister *Register) (*docker.Manager, string, error) {
 	dockerSHA, err := githubClient.GetFileSHA(event.Organization, event.Repository, buildSpec.Docker.File, event.SHA)
 	if err != nil {
 		return nil, dockerSHA, err
@@ -190,7 +184,7 @@ func (buildManager *Manager) PrepareDockerImage(githubClient *github.Client, eve
 
 		dockerfileDir := filepath.Dir(filepath.Join(dir, buildSpec.Docker.File))
 		log.Printf("Directory to build the docker image: %s", dockerfileDir)
-		err = dockerManager.BuildImage(event.Organization, event.Repository, dockerSHA, dockerfileDir, buildLog)
+		err = dockerManager.BuildImage(event.Organization, event.Repository, dockerSHA, dockerfileDir, buildRegister.BuildLogWriter)
 		if err != nil {
 			log.Println("Error building docker image", err)
 			return nil, dockerSHA, err

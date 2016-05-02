@@ -16,7 +16,6 @@ package build
 
 import (
 	"fmt"
-	"io"
 	"log"
 
 	"github.com/gocilla/gocilla/managers/docker"
@@ -34,45 +33,37 @@ type ContainerManager struct {
 	trigger       *TriggerSpec
 	event         *github.Event
 	dockerSHA     string
-	buildWriter   *mongodb.BuildWriter
-	buildLog      io.Writer
-}
-
-// NewContainerManager is the constructor for ContainerManager.
-func NewContainerManager(database *mongodb.Database, dockerManager *docker.Manager, buildSpec *Spec,
-	pipeline *PipelineSpec, trigger *TriggerSpec, event *github.Event, dockerSHA string,
-	buildWriter *mongodb.BuildWriter, buildLog io.Writer) *ContainerManager {
-	return &ContainerManager{database, dockerManager, buildSpec, pipeline, trigger, event, dockerSHA, buildWriter, buildLog}
+	buildRegister *Register
 }
 
 // ExecutePipeline executes the pipeline corresponding to the build triggered.
-func (containerBuildManager *ContainerManager) ExecutePipeline() error {
+func (containerBuildManager *ContainerManager) ExecutePipeline() (err error) {
 	event := containerBuildManager.event
 	dockerSHA := containerBuildManager.dockerSHA
 	user := containerBuildManager.buildSpec.Docker.User
 	workingDir := containerBuildManager.buildSpec.Docker.WorkingDir
-	containerManager, err := containerBuildManager.dockerManager.CreateAndStartContainer(
+	defer containerBuildManager.buildRegister.End(err)
+
+	containerManager, error := containerBuildManager.dockerManager.CreateAndStartContainer(
 		event.Organization, event.Repository, dockerSHA, user, workingDir,
 		containerBuildManager.trigger.EnvVars)
-	if err != nil {
-		log.Println("Error creating and starting the container:", err)
-		containerBuildManager.buildWriter.EndBuild("error", "Error creating and starting the container")
-		return err
+	if error != nil {
+		err = fmt.Errorf("Error creating and starting the container. %s", error)
+		return
 	}
 	defer containerManager.RemoveContainer()
 
-	if err := containerBuildManager.GitProjectClone(containerManager, event); err != nil {
-		containerBuildManager.buildWriter.EndBuild("error", "Error cloning the project")
-		return err
+	if err = containerBuildManager.GitProjectClone(containerManager, event); err != nil {
+		err = fmt.Errorf("Error cloning the project. %s", err)
+		return
 	}
 
-	if err := containerBuildManager.ExecutePipelineJobs(containerManager); err != nil {
-		containerBuildManager.buildWriter.EndBuild("error", "Error executing the pipeline")
-		return err
+	if err = containerBuildManager.ExecutePipelineJobs(containerManager); err != nil {
+		err = fmt.Errorf("Error executing the pipeline. %s", err)
+		return
 	}
 	log.Printf("Completed successfully execution of pipeline '%s'", containerBuildManager.pipeline.Name)
-	containerBuildManager.buildWriter.EndBuild("success", "")
-	return nil
+	return
 }
 
 // GitProjectClone clones a GitHub project in the container.
@@ -88,7 +79,7 @@ func (containerBuildManager *ContainerManager) GitProjectClone(containerManager 
 	}
 	for _, command := range commands {
 		log.Printf("Executing command: %s", command)
-		err := containerManager.ExecContainer(command, containerBuildManager.buildLog)
+		err := containerManager.ExecContainer(command, containerBuildManager.buildRegister.BuildLogWriter)
 		if err != nil {
 			log.Println("Error executing command", err)
 			return err
@@ -100,16 +91,23 @@ func (containerBuildManager *ContainerManager) GitProjectClone(containerManager 
 // ExecutePipelineJobs executes the list of jobs of the pipeline.
 func (containerBuildManager *ContainerManager) ExecutePipelineJobs(containerManager *docker.ContainerManager) error {
 	for _, job := range containerBuildManager.pipeline.Jobs {
-		command := containerBuildManager.buildSpec.Jobs[job]
-		containerBuildManager.buildWriter.StartBuildTask(job, command)
-		log.Printf("Executing job '%s' with command: %s", job, command)
-		err := containerManager.ExecContainer(command, containerBuildManager.buildLog)
+		err := containerBuildManager.ExecutePipelineJob(containerManager, job)
 		if err != nil {
-			log.Println("Error executing command", err)
-			containerBuildManager.buildWriter.EndBuildTask("error", "Error executing command")
 			return err
 		}
-		containerBuildManager.buildWriter.EndBuildTask("success", "")
 	}
 	return nil
+}
+
+// ExecutePipelineJob executes a job of the pipeline.
+func (containerBuildManager *ContainerManager) ExecutePipelineJob(containerManager *docker.ContainerManager, job string) (err error) {
+	command := containerBuildManager.buildSpec.Jobs[job]
+	containerBuildManager.buildRegister.StartTask(job, command)
+	log.Printf("Executing job '%s' with command: %s", job, command)
+	err = containerManager.ExecContainer(command, containerBuildManager.buildRegister.BuildLogWriter)
+	if err != nil {
+		err = fmt.Errorf("Error executing job: %s. %s", job, err)
+	}
+	containerBuildManager.buildRegister.EndTask(job, command, err)
+	return
 }
