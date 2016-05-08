@@ -4,22 +4,26 @@ docker:
 
 jobs:
   date: date
-  build: go get .
-  test_acceptance: echo "Simulating the acceptance tests"
+  build: go get -v .
+  test: echo "Simulating acceptance tests"
+  package: export VERSION="$(git rev-parse HEAD)" && cp /go/bin/gocilla . && docker build -t gocilla/gocilla:$ENVIRONMENT .
+  publish: docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD" && docker push gocilla/gocilla:$ENVIRONMENT
 
 pipelines:
   - name: pipeline-pull
     jobs:
       - date
       - build
-      - test_acceptance
+      - test
       - date
 
   - name: pipeline-dev
     jobs:
       - date
       - build
-      - test_acceptance
+      - test
+      - package
+      - publish
       - date
 
 triggers:

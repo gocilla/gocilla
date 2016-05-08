@@ -118,8 +118,18 @@ func (dockerManager *Manager) CreateAndStartContainer(organization, repository, 
 	imageName := GetTaggedImageName(organization, repository, sha)
 	log.Printf("CreateAndStartContainer for image: %s", imageName)
 	log.Printf("WorkingDir: %s", workingDir)
+	// Create volumes map to share the docker socket
 	containerOptions := docker.CreateContainerOptions{
-		Config: &docker.Config{Image: imageName, Env: GetEnv(envVars), User: user, WorkingDir: workingDir, Memory: 1024000000},
+		Config: &docker.Config{
+			Image:      imageName,
+			Env:        GetEnv(envVars),
+			User:       user,
+			WorkingDir: workingDir,
+			Memory:     1024000000,
+		},
+		HostConfig: &docker.HostConfig{
+			Binds: []string{"/var/run/docker:/var/run/docker"},
+		},
 	}
 	container, err := dockerManager.Client.CreateContainer(containerOptions)
 	if err != nil {
