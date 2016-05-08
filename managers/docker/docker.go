@@ -128,7 +128,7 @@ func (dockerManager *Manager) CreateAndStartContainer(organization, repository, 
 			Memory:     1024000000,
 		},
 		HostConfig: &docker.HostConfig{
-			Binds: []string{"/var/run/docker:/var/run/docker"},
+			Binds: []string{"/var/run/docker.sock:/var/run/docker.sock"},
 		},
 	}
 	container, err := dockerManager.Client.CreateContainer(containerOptions)
