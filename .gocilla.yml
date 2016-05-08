@@ -6,7 +6,7 @@ jobs:
   date: date
   build: go get -v .
   test: echo "Simulating acceptance tests"
-  package: export VERSION="$(git rev-parse HEAD)" && cp /go/bin/gocilla . && docker build -t gocilla/gocilla:$ENVIRONMENT .
+  package: ls -al /var/run/docker.sock && export VERSION="$(git rev-parse HEAD)" && cp /go/bin/gocilla . && docker build -t gocilla/gocilla:$ENVIRONMENT .
   publish: docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD" && docker push gocilla/gocilla:$ENVIRONMENT
 
 pipelines:
